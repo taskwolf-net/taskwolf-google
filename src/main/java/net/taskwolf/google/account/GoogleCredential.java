@@ -25,17 +25,22 @@ public class GoogleCredential {
 
   private static final String TOKEN_SERVER_URL = "https://oauth2.googleapis.com/token";
 
-  public Credential buildCredential() throws Exception {
-    var credential = new Credential.Builder(BearerToken.authorizationHeaderAccessMethod())
-      .setTransport(GoogleNetHttpTransport.newTrustedTransport())
-      .setJsonFactory(new GsonFactory())
-      .setTokenServerEncodedUrl(TOKEN_SERVER_URL)
-      .setClientAuthentication(new ClientParametersAuthentication(clientId, clientSecret))
-      .setClock(Clock.SYSTEM)
-      .build();
-    credential.setAccessToken(accessToken);
-    credential.setRefreshToken(refreshToken);
-    credential.setExpiresInSeconds(expirationTime);
-    return credential;
+  public Credential buildCredential() {
+    try {
+      var credential = new Credential.Builder(BearerToken.authorizationHeaderAccessMethod())
+        .setTransport(GoogleNetHttpTransport.newTrustedTransport())
+        .setJsonFactory(new GsonFactory())
+        .setTokenServerEncodedUrl(TOKEN_SERVER_URL)
+        .setClientAuthentication(new ClientParametersAuthentication(clientId, clientSecret))
+        .setClock(Clock.SYSTEM)
+        .build();
+      credential.setAccessToken(accessToken);
+      credential.setRefreshToken(refreshToken);
+      credential.setExpiresInSeconds(expirationTime);
+      return credential;
+    } catch (Exception exception) {
+      exception.printStackTrace();
+      return null;
+    }
   }
 }

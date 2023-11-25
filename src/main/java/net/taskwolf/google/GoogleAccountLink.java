@@ -2,18 +2,18 @@ package net.taskwolf.google;
 
 import lombok.RequiredArgsConstructor;
 import net.taskwolf.core.account.AccountLink;
-import net.taskwolf.google.account.GoogleAccountDatabaseTable;
+import net.taskwolf.google.account.GoogleUserAccountDatabaseTable;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @RequiredArgsConstructor(staticName = "create")
 public final class GoogleAccountLink implements AccountLink {
-  private final GoogleAccountDatabaseTable googleAccountDatabaseTable;
+  private final GoogleUserAccountDatabaseTable googleUserAccountDatabaseTable;
 
   @Override
   public CompletableFuture<Boolean> accountExists(UUID userId) {
-    return googleAccountDatabaseTable.accountExists(userId);
+    return googleUserAccountDatabaseTable.accountExists(userId);
   }
 
   private static final String[] GOOGLE_SCOPES = {"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile", "https://mail.google.com/"};

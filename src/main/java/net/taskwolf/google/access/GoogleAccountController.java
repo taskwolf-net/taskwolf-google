@@ -4,6 +4,8 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeToken
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.services.people.v1.PeopleService;
+import com.google.api.services.people.v1.model.Person;
 import com.google.inject.name.Named;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -11,6 +13,7 @@ import net.taskwolf.core.access.TaskwolfRestController;
 import net.taskwolf.core.user.UserDatabaseTable;
 import net.taskwolf.google.account.GoogleAccount;
 import net.taskwolf.google.account.GoogleAccountDatabaseTable;
+import net.taskwolf.google.account.GoogleCredential;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URLDecoder;
@@ -23,7 +26,7 @@ public class GoogleAccountController extends TaskwolfRestController {
   private final String clientSecret;
   private final GoogleAccountDatabaseTable googleAccountDatabaseTable;
   private final NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-  private final GsonFactory gsonFactory = new GsonFactory();
+  private final GsonFactory gsonFactory = GsonFactory.getDefaultInstance();
 
   private GoogleAccountController(
     Key secretKey, UserDatabaseTable userDatabaseTable,
@@ -57,11 +60,30 @@ public class GoogleAccountController extends TaskwolfRestController {
       var response = new GoogleAuthorizationCodeTokenRequest(httpTransport,
         gsonFactory, clientId, clientSecret, URLDecoder.decode(code, "UTF-8"),
         REDIRECT_URI).execute();
-      var account = GoogleAccount.create(response.getAccessToken(),
-        response.getRefreshToken(), response.getExpiresInSeconds());
+      var accessToken = response.getAccessToken();
+      var refreshToken = response.getRefreshToken();
+      var expirationTime = response.getExpiresInSeconds();
+      var person = catchAccountInformation(accessToken, refreshToken, expirationTime);
+      var resourceName = person.getResourceName().replace("people/", "");
+      var displayName = person.getNames().get(0).getDisplayName();
+      var emailAddress = person.getEmailAddresses().get(0).getValue();
+      var account = GoogleAccount.create(accessToken, refreshToken, expirationTime,
+        resourceName, displayName, emailAddress);
       googleAccountDatabaseTable.addAccount(userId, account);
     } catch (Exception exception) {
       exception.printStackTrace();
     }
+  }
+
+  private Person catchAccountInformation(
+    String accessToken, String refreshToken, long expirationTime
+  ) throws Exception {
+    var credential = GoogleCredential.create(clientId, clientSecret, accessToken,
+      refreshToken, expirationTime).buildCredential();
+    var service = new PeopleService.Builder(httpTransport, gsonFactory, credential)
+        .setApplicationName("Taskwolf").build();
+    return service.people().get("people/me")
+      .setPersonFields("names,emailAddresses")
+      .execute();
   }
 }

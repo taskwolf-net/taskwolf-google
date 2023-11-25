@@ -1,11 +1,30 @@
 plugins {
   id("java")
+  id("maven-publish")
 }
 
 group = "net.taskwolf"
 version = "1.0.0-SNAPSHOT"
 java.sourceCompatibility = JavaVersion.VERSION_20
 java.targetCompatibility = JavaVersion.VERSION_20
+
+publishing {
+  repositories {
+    maven {
+      name = "GitHubPackages"
+      url = uri("https://maven.pkg.github.com/TaskwolfNET/taskwolf-google")
+      credentials {
+        username = System.getenv("GITHUB_USERNAME") ?: providers.gradleProperty("githubUsername").get()
+        password = System.getenv("GITHUB_ACCESS_TOKEN") ?: providers.gradleProperty("githubAccessToken").get()
+      }
+    }
+  }
+  publications {
+    register<MavenPublication>("gpr") {
+      from(components["java"])
+    }
+  }
+}
 
 repositories {
   mavenCentral()
@@ -45,6 +64,7 @@ dependencies {
 
   implementation("com.google.api-client:google-api-client:2.0.0")
   implementation("com.google.oauth-client:google-oauth-client-jetty:1.34.1")
+  implementation("com.google.apis:google-api-services-people:v1-rev20220531-2.0.0")
 }
 
 tasks.test {

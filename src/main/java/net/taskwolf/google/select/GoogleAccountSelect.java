@@ -21,7 +21,8 @@ public class GoogleAccountSelect implements ComponentSelect {
   ) {
     return googleAccountDatabaseTable.findAccounts(user).thenApply(accounts ->
       accounts.stream().map(account ->
-        new JSONObject(Map.of("identifier", "-ACCOUNT EMAIL-", "name",
-          "-ACCOUNT USERNAME-")).toString()).collect(Collectors.toList()));
+        new JSONObject(Map.of("identifier", account.resourceName(), "name",
+          account.displayName() + " | " + account.emailAddress())).toString())
+        .collect(Collectors.toList()));
   }
 }

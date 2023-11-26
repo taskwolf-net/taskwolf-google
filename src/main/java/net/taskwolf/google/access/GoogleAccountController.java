@@ -45,13 +45,12 @@ public class GoogleAccountController extends TaskwolfRestController {
     HttpServletRequest request, HttpServletResponse response,
     @RequestParam("state") String apiKey, @RequestParam("code") String code
   ) throws Exception {
+    response.setStatus(310);
     if (!isValidApiKey(apiKey)) {
       return;
     }
     var userId = findUserId(apiKey);
     new Thread(() -> sendTokenRequest(userId, code)).start();
-    response.setHeader("Location", "https://google.com");
-    response.setStatus(302);
   }
 
   private static final String REDIRECT_URI = "https://api.taskwolf.net/google/account/add/";

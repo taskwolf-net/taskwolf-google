@@ -43,6 +43,9 @@ public final class GoogleUserAccountDatabaseTable extends DatabaseTable {
 
   private void addAccount(UUID userId, String accountId, DatabaseRow row) {
     var accountIds = row.findCell(1).<String>listValue();
+    if (accountIds.contains(accountId)) {
+      return;
+    }
     accountIds.add(accountId);
     updateAccounts(userId, accountIds);
   }

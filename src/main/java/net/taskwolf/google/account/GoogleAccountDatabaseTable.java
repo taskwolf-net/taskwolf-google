@@ -15,11 +15,11 @@ public final class GoogleAccountDatabaseTable extends DatabaseTable {
     var columns = Lists.<DatabaseColumn>newArrayList();
     columns.add(DatabaseColumn.create("id", DatabaseDataType.TEXT,
       DatabaseColumn.Type.PRIMARY_KEY));
-    columns.add(DatabaseColumn.create("accessToken", DatabaseDataType.TEXT));
     columns.add(DatabaseColumn.create("refreshToken", DatabaseDataType.TEXT));
-    columns.add(DatabaseColumn.create("expirationTime", DatabaseDataType.BIGINT));
     columns.add(DatabaseColumn.create("displayName", DatabaseDataType.TEXT));
     columns.add(DatabaseColumn.create("emailAddress", DatabaseDataType.TEXT));
+    columns.add(DatabaseColumn.create("accessToken", DatabaseDataType.TEXT));
+    columns.add(DatabaseColumn.create("expirationTime", DatabaseDataType.BIGINT));
     return new GoogleAccountDatabaseTable(connection, keyspace, TABLE_NAME, columns);
   }
 
@@ -31,16 +31,29 @@ public final class GoogleAccountDatabaseTable extends DatabaseTable {
   }
 
   public void insertAccount(GoogleAccount account) {
-    insertAccount(account.id(), account.accessToken(), account.refreshToken(),
-      account.expirationTime(), account.displayName(), account.emailAddress());
+    insertAccount(account.id(), account.refreshToken(), account.displayName(),
+      account.emailAddress(), account.accessToken(), account.expirationTime());
   }
 
   public void insertAccount(
-    String id, String accessToken, String refreshToken, long expirationDuration,
-    String displayName, String emailAddress
+    String id, String refreshToken, String displayName, String emailAddress,
+    String accessToken, long expirationTime
   ) {
-    insert(DatabaseRow.of(id, accessToken, refreshToken, expirationDuration,
-      displayName, emailAddress));
+    insert(DatabaseRow.of(id, refreshToken, displayName, emailAddress,
+      accessToken, expirationTime));
+  }
+
+  public void updateAccount(GoogleAccount account) {
+    updateAccount(account.id(), account.refreshToken(), account.displayName(),
+      account.emailAddress(), account.accessToken(), account.expirationTime());
+  }
+
+  private void updateAccount(
+    String id, String refreshToken, String displayName, String emailAddress,
+    String accessToken, long expirationTime
+  ) {
+    update(DatabaseCell.create(id), DatabaseRow.of(id, refreshToken, displayName,
+      emailAddress, accessToken, expirationTime));
   }
 
   public void deleteAccount(String id) {

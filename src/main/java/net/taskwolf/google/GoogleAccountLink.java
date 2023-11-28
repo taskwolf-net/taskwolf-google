@@ -1,8 +1,12 @@
 package net.taskwolf.google;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleRefreshTokenRequest;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 import lombok.RequiredArgsConstructor;
 import net.taskwolf.core.account.AccountLink;
 import net.taskwolf.core.iterator.AsyncIterator;
+import net.taskwolf.google.account.GoogleAccount;
 import net.taskwolf.google.account.GoogleAccountDatabaseTable;
 import net.taskwolf.google.account.GoogleUserAccountDatabaseTable;
 import org.json.JSONObject;
@@ -11,15 +15,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 @RequiredArgsConstructor(staticName = "create")
 public final class GoogleAccountLink implements AccountLink {
+  private final GoogleConfiguration googleConfiguration;
   private final GoogleAccountDatabaseTable googleAccountDatabaseTable;
   private final GoogleUserAccountDatabaseTable googleUserAccountDatabaseTable;
 
   @Override
   public CompletableFuture<Boolean> accountExists(UUID userId) {
+    checkAccountsTokenRefresh(userId);
     return googleUserAccountDatabaseTable.accountExists(userId);
   }
 
@@ -28,11 +33,44 @@ public final class GoogleAccountLink implements AccountLink {
     var futureResponse = new CompletableFuture<List<String>>();
     googleUserAccountDatabaseTable.findAccounts(userId).thenApply(accountIds ->
       AsyncIterator.execute(accountIds, googleAccountDatabaseTable::findAccount,
-        accountIds.size(), accounts -> futureResponse.complete(accounts.stream().map(account ->
-            new JSONObject(Map.of("identifier", account.id(), "name",
-              account.displayName() + " | " + account.emailAddress())).toString())
-          .collect(Collectors.toList()))));
+        accountIds.size(), accounts -> futureResponse.complete(completeAccountFinding(accounts))));
     return futureResponse;
+  }
+
+  private List<String> completeAccountFinding(
+    List<GoogleAccount> accounts
+  ) {
+    checkAccountsTokenRefresh(accounts);
+    return accounts.stream().map(account -> new JSONObject(Map.of("identifier",
+      account.id(), "name", account.displayName() + " | " +
+        account.emailAddress())).toString()).toList();
+  }
+
+  private void checkAccountsTokenRefresh(UUID userId) {
+    googleUserAccountDatabaseTable.findAccounts(userId).thenApply(accountIds ->
+      AsyncIterator.execute(accountIds, googleAccountDatabaseTable::findAccount,
+        accountIds.size(), this::checkAccountsTokenRefresh));
+  }
+
+  private void checkAccountsTokenRefresh(List<GoogleAccount> accounts) {
+    for (var account : accounts) {
+      if (System.currentTimeMillis() > account.expirationTime()) {
+        refreshToken(account);
+      }
+    }
+  }
+
+  private void refreshToken(GoogleAccount account) {
+    try {
+      var response = new GoogleRefreshTokenRequest(GoogleNetHttpTransport.newTrustedTransport(),
+        GsonFactory.getDefaultInstance(), account.refreshToken(), googleConfiguration.clientId(),
+        googleConfiguration.clientSecret()).execute();
+      account.updateVerification(response.getAccessToken(), System.currentTimeMillis() +
+        (response.getExpiresInSeconds() * 1000));
+      googleAccountDatabaseTable.updateAccount(account);
+    } catch (Exception exception) {
+      exception.printStackTrace();
+    }
   }
 
   @Override

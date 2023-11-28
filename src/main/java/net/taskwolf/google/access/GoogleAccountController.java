@@ -67,8 +67,8 @@ public class GoogleAccountController extends TaskwolfRestController {
       var id = person.getResourceName().replace("people/", "");
       var displayName = person.getNames().get(0).getDisplayName();
       var emailAddress = person.getEmailAddresses().get(0).getValue();
-      var account = GoogleAccount.create(id, accessToken, refreshToken,
-        expirationTime, displayName, emailAddress);
+      var account = GoogleAccount.create(id, refreshToken, displayName, emailAddress,
+        accessToken, System.currentTimeMillis() + (expirationTime * 1000));
       googleAccountDatabaseTable.insertAccount(account);
       googleUserAccountDatabaseTable.addAccount(userId, id);
     } catch (Exception exception) {

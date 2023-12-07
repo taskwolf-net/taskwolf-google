@@ -2,7 +2,7 @@ package net.taskwolf.google.select;
 
 import lombok.RequiredArgsConstructor;
 import net.taskwolf.core.iterator.AsyncIterator;
-import net.taskwolf.core.workflow.component.ComponentSelect;
+import net.taskwolf.core.workflow.component.input.InputComponentSelect;
 import net.taskwolf.google.account.GoogleAccountDatabaseTable;
 import net.taskwolf.google.account.GoogleUserAccountDatabaseTable;
 import org.json.JSONObject;
@@ -14,7 +14,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor(staticName = "create")
-public class GoogleAccountSelect implements ComponentSelect {
+public class GoogleAccountSelect implements InputComponentSelect {
   private final GoogleAccountDatabaseTable googleAccountDatabaseTable;
   private final GoogleUserAccountDatabaseTable googleUserAccountDatabaseTable;
 

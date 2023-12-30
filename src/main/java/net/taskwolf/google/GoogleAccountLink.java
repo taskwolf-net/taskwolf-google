@@ -23,15 +23,15 @@ public final class GoogleAccountLink implements AccountLink {
   private final GoogleUserAccountDatabaseTable googleUserAccountDatabaseTable;
 
   @Override
-  public CompletableFuture<Boolean> accountExists(UUID userId) {
-    checkAccountsTokenRefresh(userId);
-    return googleUserAccountDatabaseTable.accountExists(userId);
+  public CompletableFuture<Boolean> accountExists(UUID id) {
+    checkAccountsTokenRefresh(id);
+    return googleUserAccountDatabaseTable.accountExists(id);
   }
 
   @Override
-  public CompletableFuture<List<String>> findAccounts(UUID userId) {
+  public CompletableFuture<List<String>> findAccounts(UUID id) {
     var futureResponse = new CompletableFuture<List<String>>();
-    googleUserAccountDatabaseTable.findAccounts(userId).thenApply(accountIds ->
+    googleUserAccountDatabaseTable.findAccounts(id).thenApply(accountIds ->
       AsyncIterator.execute(accountIds, googleAccountDatabaseTable::findAccount,
         accountIds.size(), accounts -> futureResponse.complete(completeAccountFinding(accounts))));
     return futureResponse;
@@ -46,8 +46,8 @@ public final class GoogleAccountLink implements AccountLink {
         account.emailAddress())).toString()).toList();
   }
 
-  private void checkAccountsTokenRefresh(UUID userId) {
-    googleUserAccountDatabaseTable.findAccounts(userId).thenApply(accountIds ->
+  private void checkAccountsTokenRefresh(UUID id) {
+    googleUserAccountDatabaseTable.findAccounts(id).thenApply(accountIds ->
       AsyncIterator.execute(accountIds, googleAccountDatabaseTable::findAccount,
         accountIds.size(), this::checkAccountsTokenRefresh));
   }
@@ -74,17 +74,17 @@ public final class GoogleAccountLink implements AccountLink {
   }
 
   @Override
-  public void removeAccount(UUID userId, String identifier) {
+  public void removeAccount(UUID id, String identifier) {
     googleAccountDatabaseTable.deleteAccount(identifier);
-    googleUserAccountDatabaseTable.removeAccount(userId, identifier);
+    googleUserAccountDatabaseTable.removeAccount(id, identifier);
   }
 
   private static final String[] GOOGLE_SCOPES = {"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile", "https://mail.google.com/"};
-  private static final String GOOGLE_REGISTRATION_URL = "https://accounts.google.com/o/oauth2/auth?access_type=offline&prompt=consent&client_id=449589853116-jfrqb583smjop8m0rsvk7gspqge2sta9.apps.googleusercontent.com&redirect_uri=https://api.taskwolf.net/google/account/add/&state=API-KEY&response_type=code&scope=" + String.join(" ", GOOGLE_SCOPES);
+  private static final String GOOGLE_REGISTRATION_URL = "https://accounts.google.com/o/oauth2/auth?access_type=offline&prompt=consent&client_id=449589853116-jfrqb583smjop8m0rsvk7gspqge2sta9.apps.googleusercontent.com&redirect_uri=https://api.taskwolf.net/google/account/add/&state=TASKWOLF-STATE&response_type=code&scope=" + String.join(" ", GOOGLE_SCOPES);
 
   @Override
-  public String registrationUrl(String apiKey) {
-    return GOOGLE_REGISTRATION_URL.replace("API-KEY", apiKey);
+  public String registrationUrl(UUID id, String apiKey) {
+    return GOOGLE_REGISTRATION_URL.replace("TASKWOLF-STATE", apiKey + id.toString());
   }
 
   @Override

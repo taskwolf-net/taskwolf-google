@@ -84,7 +84,7 @@ public final class GoogleAccountLink implements AccountLink {
 
   @Override
   public String registrationUrl(UUID id, String apiKey) {
-    return GOOGLE_REGISTRATION_URL.replace("TASKWOLF-STATE", apiKey + id.toString());
+    return GOOGLE_REGISTRATION_URL.replace("TASKWOLF-STATE", apiKey + "TASKWOLF-STATE-SPLIT" + id.toString());
   }
 
   @Override

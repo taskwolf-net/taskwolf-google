@@ -8,6 +8,7 @@ import com.google.api.services.people.v1.model.Person;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import net.taskwolf.core.access.TaskwolfRestController;
+import net.taskwolf.core.user.User;
 import net.taskwolf.core.user.UserDatabaseTable;
 import net.taskwolf.google.account.GoogleAccount;
 import net.taskwolf.google.account.GoogleAccountDatabaseTable;
@@ -46,11 +47,20 @@ public class GoogleAccountController extends TaskwolfRestController {
     @RequestParam("state") String state, @RequestParam("code") String code
   ) throws Exception {
     response.setStatus(310);
-    var apiKey = state.substring(0, 231);
+    var splitted = state.split("TASKWOLF-STATE-SPLIT");
+    var apiKey = splitted[0];
     if (!isValidApiKey(apiKey)) {
       return;
     }
-    var id = UUID.fromString(state.substring(232));
+    var id = UUID.fromString(splitted[1]);
+    userDatabaseTable().findUser(findUserId(apiKey)).thenAccept(user ->
+      addAccount(user, id, code));
+  }
+
+  private void addAccount(User user, UUID id, String code) {
+    if (!user.id().equals(id) && !user.organizations().contains(id)) {
+      return;
+    }
     new Thread(() -> sendTokenRequest(id, code)).start();
   }
 

@@ -80,7 +80,7 @@ public final class GoogleAccountLink implements AccountLink {
   }
 
   private static final String[] GOOGLE_SCOPES = {"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile", "https://mail.google.com/"};
-  private static final String GOOGLE_REGISTRATION_URL = "https://accounts.google.com/o/oauth2/auth?access_type=offline&prompt=consent&client_id=449589853116-jfrqb583smjop8m0rsvk7gspqge2sta9.apps.googleusercontent.com&redirect_uri=https://api.taskwolf.net/google/account/add/&state=TASKWOLF-STATE&response_type=code&scope=" + String.join(" ", GOOGLE_SCOPES);
+  private static final String GOOGLE_REGISTRATION_URL = "https://accounts.google.com/o/oauth2/auth?access_type=offline&prompt=consent&client_id=449589853116-jfrqb583smjop8m0rsvk7gspqge2sta9.apps.googleusercontent.com&redirect_uri=https://api.taskwolf.net/v1/google/account/add/&state=TASKWOLF-STATE&response_type=code&scope=" + String.join(" ", GOOGLE_SCOPES);
 
   @Override
   public String registrationUrl(UUID id, String apiKey) {

@@ -64,7 +64,7 @@ public class GoogleAccountController extends TaskwolfRestController {
     new Thread(() -> sendTokenRequest(id, code)).start();
   }
 
-  private static final String REDIRECT_URI = "https://api.taskwolf.net/google/account/add/";
+  private static final String REDIRECT_URI = "https://api.taskwolf.net/v1/google/account/add/";
 
   private void sendTokenRequest(UUID userId, String code) {
     try {

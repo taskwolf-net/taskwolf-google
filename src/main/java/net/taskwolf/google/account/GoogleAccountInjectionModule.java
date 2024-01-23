@@ -28,6 +28,7 @@ public final class GoogleAccountInjectionModule extends AbstractModule {
     var googleUserAccountDatabaseTable = GoogleUserAccountDatabaseTable.create(
       databaseConnection, databaseKeyspace);
     googleUserAccountDatabaseTable.createIfNotExists();
+    googleUserAccountDatabaseTable.createIndexIfNotExists("accounts");
     return googleUserAccountDatabaseTable;
   }
 }

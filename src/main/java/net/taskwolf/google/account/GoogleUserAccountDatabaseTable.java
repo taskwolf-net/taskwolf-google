@@ -27,31 +27,34 @@ public final class GoogleUserAccountDatabaseTable extends DatabaseTable {
     super(connection, keyspace, name, columns);
   }
 
-  public void addAccount(UUID userId, String accountId) {
+  public CompletableFuture<Void> addAccount(UUID userId, String accountId) {
+    var futureResponse = new CompletableFuture<Void>();
     exists(DatabaseCell.create(userId)).thenAccept(exists ->
-      addAccount(userId, accountId, exists));
+      addAccount(userId, accountId, exists).thenAccept(futureResponse::complete));
+    return futureResponse;
   }
 
-  private void addAccount(UUID userId, String accountId, boolean exists) {
+  private CompletableFuture<Void> addAccount(UUID userId, String accountId, boolean exists) {
     if (!exists) {
-      insertAccount(userId, accountId);
-      return;
+      return insertAccount(userId, accountId);
     }
+    var futureResponse = new CompletableFuture<Void>();
     selectRow(DatabaseCell.create(userId)).thenAccept(row ->
-      addAccount(userId, accountId, row));
+      addAccount(userId, accountId, row).thenAccept(futureResponse::complete));
+    return futureResponse;
   }
 
-  private void addAccount(UUID userId, String accountId, DatabaseRow row) {
+  private CompletableFuture<Void> addAccount(UUID userId, String accountId, DatabaseRow row) {
     var accountIds = row.findCell(1).<String>listValue();
     if (accountIds.contains(accountId)) {
-      return;
+      return CompletableFuture.completedFuture(null);
     }
     accountIds.add(accountId);
-    updateAccounts(userId, accountIds);
+    return updateAccounts(userId, accountIds);
   }
 
-  private void insertAccount(UUID userId, String accountId) {
-    insert(DatabaseRow.of(userId, Lists.newArrayList(accountId)));
+  private CompletableFuture<Void> insertAccount(UUID userId, String accountId) {
+    return insert(DatabaseRow.of(userId, Lists.newArrayList(accountId)));
   }
 
   public void removeAccount(UUID userId, String accountId) {
@@ -69,8 +72,8 @@ public final class GoogleUserAccountDatabaseTable extends DatabaseTable {
     updateAccounts(userId, accountIds);
   }
 
-  public void updateAccounts(UUID userId, List<String> accountIds) {
-    update(DatabaseCell.create(userId), DatabaseRow.of(userId, accountIds));
+  public CompletableFuture<Void> updateAccounts(UUID userId, List<String> accountIds) {
+    return update(DatabaseCell.create(userId), DatabaseRow.of(userId, accountIds));
   }
 
   public void deleteAccounts(UUID userId) {
@@ -79,6 +82,11 @@ public final class GoogleUserAccountDatabaseTable extends DatabaseTable {
 
   public CompletableFuture<Boolean> accountExists(UUID userId) {
     return exists(DatabaseCell.create(userId));
+  }
+
+  public CompletableFuture<Integer> accountOccurNumber(String account) {
+    return selectRows("accounts CONTAINS '" + account + "'")
+      .thenApply(List::size);
   }
 
   public CompletableFuture<List<String>> findAccounts(UUID userId) {

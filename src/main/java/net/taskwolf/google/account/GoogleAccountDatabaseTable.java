@@ -30,16 +30,16 @@ public final class GoogleAccountDatabaseTable extends DatabaseTable {
     super(connection, keyspace, name, columns);
   }
 
-  public void insertAccount(GoogleAccount account) {
-    insertAccount(account.id(), account.refreshToken(), account.displayName(),
+  public CompletableFuture<Void> insertAccount(GoogleAccount account) {
+    return insertAccount(account.id(), account.refreshToken(), account.displayName(),
       account.emailAddress(), account.accessToken(), account.expirationTime());
   }
 
-  public void insertAccount(
+  public CompletableFuture<Void> insertAccount(
     String id, String refreshToken, String displayName, String emailAddress,
     String accessToken, long expirationTime
   ) {
-    insert(DatabaseRow.of(id, refreshToken, displayName, emailAddress,
+    return insert(DatabaseRow.of(id, refreshToken, displayName, emailAddress,
       accessToken, expirationTime));
   }
 

@@ -14,6 +14,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 public final class GoogleContextInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
   private final GoogleAccountDatabaseTable googleAccountDatabaseTable;
   private final GoogleUserAccountDatabaseTable googleUserAccountDatabaseTable;
+  private final GoogleAccountLinkRepository googleAccountLinkRepository;
 
   @Override
   public void initialize(ConfigurableApplicationContext applicationContext) {
@@ -22,5 +23,7 @@ public final class GoogleContextInitializer implements ApplicationContextInitial
       googleAccountDatabaseTable);
     beanFactory.registerSingleton("googleUserAccountDatabaseTable",
       googleUserAccountDatabaseTable);
+    beanFactory.registerSingleton("googleAccountLinkRepository",
+      googleAccountLinkRepository);
   }
 }

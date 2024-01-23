@@ -16,6 +16,8 @@ import net.taskwolf.core.notification.NotificationDatabaseTable;
 import net.taskwolf.core.user.ProfilePictureDatabaseTable;
 import net.taskwolf.core.user.User;
 import net.taskwolf.core.user.UserDatabaseTable;
+import net.taskwolf.google.GoogleAccountLink;
+import net.taskwolf.google.GoogleAccountLinkRepository;
 import net.taskwolf.google.account.GoogleAccount;
 import net.taskwolf.google.account.GoogleAccountDatabaseTable;
 import net.taskwolf.google.account.GoogleUserAccountDatabaseTable;
@@ -36,6 +38,7 @@ public class GoogleAccountController extends TaskwolfRestController {
   private final String clientSecret;
   private final GoogleAccountDatabaseTable googleAccountDatabaseTable;
   private final GoogleUserAccountDatabaseTable googleUserAccountDatabaseTable;
+  private final GoogleAccountLinkRepository googleAccountLinkRepository;
   private final ProfilePictureDatabaseTable profilePictureDatabaseTable;
   private final String defaultProfilePicture;
   private final NotificationDatabaseTable notificationDatabaseTable;
@@ -47,6 +50,7 @@ public class GoogleAccountController extends TaskwolfRestController {
     @Qualifier("clientSecret") String clientSecret,
     GoogleAccountDatabaseTable googleAccountDatabaseTable,
     GoogleUserAccountDatabaseTable googleUserAccountDatabaseTable,
+    GoogleAccountLinkRepository googleAccountLinkRepository,
     ProfilePictureDatabaseTable profilePictureDatabaseTable,
     @Qualifier("defaultProfilePicture") String defaultProfilePicture,
     NotificationDatabaseTable notificationDatabaseTable, Distribution distribution
@@ -56,6 +60,7 @@ public class GoogleAccountController extends TaskwolfRestController {
     this.clientSecret = clientSecret;
     this.googleAccountDatabaseTable = googleAccountDatabaseTable;
     this.googleUserAccountDatabaseTable = googleUserAccountDatabaseTable;
+    this.googleAccountLinkRepository = googleAccountLinkRepository;
     this.profilePictureDatabaseTable = profilePictureDatabaseTable;
     this.defaultProfilePicture = defaultProfilePicture;
     this.notificationDatabaseTable = notificationDatabaseTable;
@@ -74,24 +79,48 @@ public class GoogleAccountController extends TaskwolfRestController {
       return;
     }
     var id = UUID.fromString(splitted[1]);
+    var module = splitted[2];
     userDatabaseTable().findUser(findUserId(apiKey)).thenAccept(user ->
-      addAccount(user, id, code));
+      addAccount(user, id, module, code));
   }
 
-  private void addAccount(User user, UUID id, String code) {
+  private void addAccount(User user, UUID id, String module, String code) {
     if (!user.id().equals(id) && !user.organizations().contains(id)) {
       return;
     }
-    new Thread(() -> saveGoogleAccount(id, code)).start();
+    new Thread(() -> finishAccountAdding(id, module, code)).start();
   }
 
   private static final String ACCOUNT_ADD_REDIRECT_URI =
     "https://api.taskwolf.net/v1/google/account/add/";
 
-  private void saveGoogleAccount(UUID userId, String code) {
+  private void finishAccountAdding(UUID userId, String module, String code) {
     var account = fetchGoogleAccount(code, ACCOUNT_ADD_REDIRECT_URI);
-    googleAccountDatabaseTable.insertAccount(account);
-    googleUserAccountDatabaseTable.addAccount(userId, account.id());
+    var accountId = account.id();
+    googleAccountDatabaseTable.accountExists(accountId).thenAccept(exists ->
+      storeGoogleAccount(account, exists).thenAccept(firstValue ->
+          googleUserAccountDatabaseTable.addAccount(userId, accountId))
+        .thenAccept(secondValue -> googleAccountLinkRepository.findAccountLink(module)
+          .ifPresent(link -> broadcastAccountRegistration(link, userId, accountId))));
+  }
+
+  private void broadcastAccountRegistration(
+    GoogleAccountLink link, UUID userId, String accountId
+  ) {
+    try {
+      link.registerAccount(userId, accountId);
+    } catch (Exception exception) {
+      exception.printStackTrace();
+    }
+  }
+
+  private CompletableFuture<Void> storeGoogleAccount(
+    GoogleAccount account, boolean exists
+  ) {
+    if (exists) {
+      return CompletableFuture.completedFuture(null);
+    }
+    return googleAccountDatabaseTable.insertAccount(account);
   }
 
   private static final String GOOGLE_LOGIN_REDIRECT_URI =

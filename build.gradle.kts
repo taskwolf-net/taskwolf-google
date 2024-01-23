@@ -58,12 +58,12 @@ dependencies {
   compileOnly("org.json:json:20231013")
   compileOnly("commons-io:commons-io:2.15.1")
 
-  compileOnly("org.springframework.boot:spring-boot-starter-web:3.2.1")
+  compileOnly("org.springframework.boot:spring-boot-starter-web:3.2.2")
 
   compileOnly("io.jsonwebtoken:jjwt:0.12.3")
 
   implementation("com.google.api-client:google-api-client:2.2.0")
-  implementation("com.google.oauth-client:google-oauth-client-jetty:1.34.1")
+  implementation("com.google.oauth-client:google-oauth-client-jetty:1.35.0")
   implementation("com.google.apis:google-api-services-people:v1-rev20230621-2.0.0")
 }
 

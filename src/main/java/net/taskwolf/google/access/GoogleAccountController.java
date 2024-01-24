@@ -16,6 +16,7 @@ import net.taskwolf.core.notification.NotificationDatabaseTable;
 import net.taskwolf.core.user.ProfilePictureDatabaseTable;
 import net.taskwolf.core.user.User;
 import net.taskwolf.core.user.UserDatabaseTable;
+import net.taskwolf.core.user.UserTargetDatabaseTable;
 import net.taskwolf.google.GoogleAccountLink;
 import net.taskwolf.google.GoogleAccountLinkRepository;
 import net.taskwolf.google.account.GoogleAccount;
@@ -39,6 +40,7 @@ public class GoogleAccountController extends TaskwolfRestController {
   private final GoogleAccountDatabaseTable googleAccountDatabaseTable;
   private final GoogleUserAccountDatabaseTable googleUserAccountDatabaseTable;
   private final GoogleAccountLinkRepository googleAccountLinkRepository;
+  private final UserTargetDatabaseTable userTargetDatabaseTable;
   private final ProfilePictureDatabaseTable profilePictureDatabaseTable;
   private final String defaultProfilePicture;
   private final NotificationDatabaseTable notificationDatabaseTable;
@@ -51,6 +53,7 @@ public class GoogleAccountController extends TaskwolfRestController {
     GoogleAccountDatabaseTable googleAccountDatabaseTable,
     GoogleUserAccountDatabaseTable googleUserAccountDatabaseTable,
     GoogleAccountLinkRepository googleAccountLinkRepository,
+    UserTargetDatabaseTable userTargetDatabaseTable,
     ProfilePictureDatabaseTable profilePictureDatabaseTable,
     @Qualifier("defaultProfilePicture") String defaultProfilePicture,
     NotificationDatabaseTable notificationDatabaseTable, Distribution distribution
@@ -61,6 +64,7 @@ public class GoogleAccountController extends TaskwolfRestController {
     this.googleAccountDatabaseTable = googleAccountDatabaseTable;
     this.googleUserAccountDatabaseTable = googleUserAccountDatabaseTable;
     this.googleAccountLinkRepository = googleAccountLinkRepository;
+    this.userTargetDatabaseTable = userTargetDatabaseTable;
     this.profilePictureDatabaseTable = profilePictureDatabaseTable;
     this.defaultProfilePicture = defaultProfilePicture;
     this.notificationDatabaseTable = notificationDatabaseTable;
@@ -175,6 +179,7 @@ public class GoogleAccountController extends TaskwolfRestController {
   ) {
     userDatabaseTable().insertUser(userId, name, email, passwordHash, "en",
       Lists.newArrayList());
+    userTargetDatabaseTable.insertTarget(userId, userId);
     profilePictureDatabaseTable.insertProfilePicture(userId, defaultProfilePicture);
     notificationDatabaseTable.insertNotificationSettings(userId, true, true);
     distribution.addNewUser(userId);

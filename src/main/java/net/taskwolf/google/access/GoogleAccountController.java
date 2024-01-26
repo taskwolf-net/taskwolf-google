@@ -160,7 +160,7 @@ public class GoogleAccountController extends TaskwolfRestController {
       insertNewUser(userId, account.displayName(), account.emailAddress(), "");
     }
     var token = generateApiKey(userId);
-    var date = new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24).toString();
+    var date = new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 30).toString();
     var cookieContent = String.format(TOKEN_COOKIE_FORMAT, token, date);
     response.addHeader("Set-Cookie", cookieContent);
     try {
@@ -180,7 +180,7 @@ public class GoogleAccountController extends TaskwolfRestController {
     distribution.addNewUser(userId);
   }
 
-  private static final int EXPIRATION_TIME = 1000 * 60 * 60;
+  private static final long EXPIRATION_TIME = 1000L * 60 * 60 * 24 * 30;
 
   private String generateApiKey(UUID userId) {
     var expiration = new Date(System.currentTimeMillis() + EXPIRATION_TIME);

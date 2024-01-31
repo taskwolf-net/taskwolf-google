@@ -182,7 +182,7 @@ public class GoogleAccountController extends TaskwolfRestController {
     userTargetDatabaseTable.insertTarget(userId, userId);
     profilePictureDatabaseTable.insertProfilePicture(userId, defaultProfilePicture);
     notificationDatabaseTable.insertNotificationSettings(userId, true, true);
-    distribution.addNewUser(userId);
+    distribution.addUser(userId);
   }
 
   private static final long EXPIRATION_TIME = 1000L * 60 * 60 * 24 * 30;

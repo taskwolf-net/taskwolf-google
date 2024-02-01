@@ -119,13 +119,14 @@ public class GoogleAccountLink implements AccountLink {
     googleUserAccountDatabaseTable.removeAccount(id, identifier);
   }
 
-  private static final String[] GOOGLE_SCOPES = {"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile", "https://mail.google.com/", "https://www.googleapis.com/auth/gmail.settings.basic"};
-  private static final String GOOGLE_REGISTRATION_URL = "https://accounts.google.com/o/oauth2/auth?access_type=offline&prompt=consent&client_id=449589853116-6840gshc03m0fq0g77d6k26c4da5ad3r.apps.googleusercontent.com&redirect_uri=https://api.taskwolf.net/v1/google/account/add/&state=TASKWOLF-STATE&response_type=code&scope=" + String.join(" ", GOOGLE_SCOPES);
+  private static final String[] GOOGLE_SCOPES = {"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile", "https://mail.google.com/", "https://www.googleapis.com/auth/gmail.settings.basic", "https://www.googleapis.com/auth/gmail.labels"};
+  private static final String GOOGLE_REGISTRATION_URL = "https://accounts.google.com/o/oauth2/auth?access_type=offline&prompt=consent&client_id=GOOGLE_CLIENT_ID&redirect_uri=https://api.taskwolf.net/v1/google/account/add/&state=TASKWOLF-STATE&response_type=code&scope=" + String.join(" ", GOOGLE_SCOPES);
 
   @Override
   public String registrationUrl(UUID id, String apiKey) {
     return GOOGLE_REGISTRATION_URL.replace("TASKWOLF-STATE", apiKey +
-      "TASKWOLF-STATE-SPLIT" + id.toString() + "TASKWOLF-STATE-SPLIT" + module);
+      "TASKWOLF-STATE-SPLIT" + id.toString() + "TASKWOLF-STATE-SPLIT" + module)
+      .replace("GOOGLE_CLIENT_ID", googleConfiguration.clientId());
   }
 
   @Override

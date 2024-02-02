@@ -89,6 +89,22 @@ public final class GoogleUserAccountDatabaseTable extends DatabaseTable {
       .thenApply(List::size);
   }
 
+  public CompletableFuture<List<String>> findAccountsIfExists(UUID userId) {
+    var futureResponse = new CompletableFuture<List<String>>();
+    accountExists(userId).thenAccept(exists -> findAccountsIfExists(userId, exists)
+      .thenAccept(futureResponse::complete));
+    return futureResponse;
+  }
+
+  private CompletableFuture<List<String>> findAccountsIfExists(
+    UUID userId, boolean exists
+  ) {
+    if (!exists) {
+      return CompletableFuture.completedFuture(Lists.newArrayList());
+    }
+    return findAccounts(userId);
+  }
+
   public CompletableFuture<List<String>> findAccounts(UUID userId) {
     return selectRow(DatabaseCell.create(userId))
       .thenApply(row -> row.findCell(1).listValue());

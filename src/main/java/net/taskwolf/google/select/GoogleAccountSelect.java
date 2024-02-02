@@ -23,7 +23,7 @@ public class GoogleAccountSelect implements InputComponentSelect {
     UUID user, Map<String, String> previousInputs
   ) {
     var futureResponse = new CompletableFuture<List<String>>();
-    googleUserAccountDatabaseTable.findAccounts(user).thenApply(accountIds ->
+    googleUserAccountDatabaseTable.findAccountsIfExists(user).thenApply(accountIds ->
       AsyncIterator.execute(accountIds, googleAccountDatabaseTable::findAccount,
         accountIds.size(), accounts -> futureResponse.complete(accounts.stream().map(account ->
             new JSONObject(Map.of("identifier", account.id(), "name",

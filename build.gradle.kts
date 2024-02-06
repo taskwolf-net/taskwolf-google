@@ -40,7 +40,7 @@ repositories {
 
 dependencies {
   testCompileOnly(platform("org.junit:junit-bom:5.10.2"))
-  testCompileOnly("org.junit.jupiter:junit-jupiter:5.10.1")
+  testCompileOnly("org.junit.jupiter:junit-jupiter:5.10.2")
 
   compileOnly("net.taskwolf:core:1.0.0-SNAPSHOT")
 
@@ -60,9 +60,9 @@ dependencies {
 
   compileOnly("org.springframework.boot:spring-boot-starter-web:3.2.2")
 
-  compileOnly("io.jsonwebtoken:jjwt:0.12.4")
+  compileOnly("io.jsonwebtoken:jjwt:0.12.5")
 
-  implementation("com.google.api-client:google-api-client:2.2.0")
+  implementation("com.google.api-client:google-api-client:2.3.0")
   implementation("com.google.oauth-client:google-oauth-client-jetty:1.35.0")
   implementation("com.google.apis:google-api-services-people:v1-rev20230621-2.0.0")
 }

@@ -62,7 +62,7 @@ dependencies {
 
   compileOnly("io.jsonwebtoken:jjwt:0.12.5")
 
-  implementation("com.google.api-client:google-api-client:2.3.0")
+  implementation("com.google.api-client:google-api-client:2.4.0")
   implementation("com.google.oauth-client:google-oauth-client-jetty:1.35.0")
   implementation("com.google.apis:google-api-services-people:v1-rev20230621-2.0.0")
 }

@@ -7,10 +7,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public final class GoogleAccountDatabaseTable extends DatabaseTable {
-  private static final String TABLE_NAME = "google_account";
-
   public static GoogleAccountDatabaseTable create(
-    DatabaseConnection connection, DatabaseKeyspace keyspace
+    DatabaseConnection connection, DatabaseKeyspace keyspace, String tableName
   ) {
     var columns = Lists.<DatabaseColumn>newArrayList();
     columns.add(DatabaseColumn.create("id", DatabaseDataType.TEXT,
@@ -20,7 +18,7 @@ public final class GoogleAccountDatabaseTable extends DatabaseTable {
     columns.add(DatabaseColumn.create("emailAddress", DatabaseDataType.TEXT));
     columns.add(DatabaseColumn.create("accessToken", DatabaseDataType.TEXT));
     columns.add(DatabaseColumn.create("expirationTime", DatabaseDataType.BIGINT));
-    return new GoogleAccountDatabaseTable(connection, keyspace, TABLE_NAME, columns);
+    return new GoogleAccountDatabaseTable(connection, keyspace, tableName, columns);
   }
 
   private GoogleAccountDatabaseTable(

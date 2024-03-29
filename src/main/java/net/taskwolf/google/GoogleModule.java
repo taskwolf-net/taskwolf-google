@@ -14,7 +14,7 @@ public final class GoogleModule extends Module {
   private Log log;
 
   public GoogleModule(Injector injector) {
-    super(injector.createChildInjector(GoogleInjectionModule.create()));
+    super(injector);
   }
 
   @Override

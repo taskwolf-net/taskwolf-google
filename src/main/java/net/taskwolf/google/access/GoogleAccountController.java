@@ -21,7 +21,6 @@ import net.taskwolf.google.GoogleAccountLink;
 import net.taskwolf.google.GoogleAccountLinkRepository;
 import net.taskwolf.google.account.GoogleAccount;
 import net.taskwolf.google.account.GoogleAccountDatabaseTable;
-import net.taskwolf.google.account.GoogleUserAccountDatabaseTable;
 import net.taskwolf.google.account.GoogleCredential;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
@@ -37,8 +36,6 @@ import java.util.concurrent.CompletableFuture;
 public class GoogleAccountController extends TaskwolfRestController {
   private final String clientId;
   private final String clientSecret;
-  private final GoogleAccountDatabaseTable googleAccountDatabaseTable;
-  private final GoogleUserAccountDatabaseTable googleUserAccountDatabaseTable;
   private final GoogleAccountLinkRepository googleAccountLinkRepository;
   private final UserTargetDatabaseTable userTargetDatabaseTable;
   private final ProfilePictureDatabaseTable profilePictureDatabaseTable;
@@ -50,8 +47,6 @@ public class GoogleAccountController extends TaskwolfRestController {
     Key secretKey, UserDatabaseTable userDatabaseTable,
     @Qualifier("clientId") String clientId,
     @Qualifier("clientSecret") String clientSecret,
-    GoogleAccountDatabaseTable googleAccountDatabaseTable,
-    GoogleUserAccountDatabaseTable googleUserAccountDatabaseTable,
     GoogleAccountLinkRepository googleAccountLinkRepository,
     UserTargetDatabaseTable userTargetDatabaseTable,
     ProfilePictureDatabaseTable profilePictureDatabaseTable,
@@ -61,8 +56,6 @@ public class GoogleAccountController extends TaskwolfRestController {
     super(secretKey, userDatabaseTable);
     this.clientId = clientId;
     this.clientSecret = clientSecret;
-    this.googleAccountDatabaseTable = googleAccountDatabaseTable;
-    this.googleUserAccountDatabaseTable = googleUserAccountDatabaseTable;
     this.googleAccountLinkRepository = googleAccountLinkRepository;
     this.userTargetDatabaseTable = userTargetDatabaseTable;
     this.profilePictureDatabaseTable = profilePictureDatabaseTable;
@@ -92,20 +85,22 @@ public class GoogleAccountController extends TaskwolfRestController {
     if (!user.id().equals(id) && !user.organizations().contains(id)) {
       return;
     }
-    new Thread(() -> finishAccountAdding(id, module, code)).start();
+    new Thread(() -> googleAccountLinkRepository.findAccountLink(module)
+      .ifPresent(link -> finishAccountAdding(id, link, code))).start();
   }
 
   private static final String ACCOUNT_ADD_REDIRECT_URI =
     "https://api.taskwolf.net/v1/google/account/add/";
 
-  private void finishAccountAdding(UUID userId, String module, String code) {
+  private void finishAccountAdding(UUID userId, GoogleAccountLink link, String code) {
     var account = fetchGoogleAccount(code, ACCOUNT_ADD_REDIRECT_URI);
     var accountId = account.id();
-    googleAccountDatabaseTable.accountExists(accountId).thenAccept(exists ->
-      storeGoogleAccount(account, exists).thenAccept(firstValue ->
-          googleUserAccountDatabaseTable.addAccount(userId, accountId))
-        .thenAccept(secondValue -> googleAccountLinkRepository.findAccountLink(module)
-          .ifPresent(link -> broadcastAccountRegistration(link, userId, accountId))));
+    var accountDatabaseTable = link.googleAccountDatabaseTable();
+    var userAccountDatabaseTable = link.googleUserAccountDatabaseTable();
+    accountDatabaseTable.accountExists(accountId).thenAccept(exists ->
+      storeGoogleAccount(accountDatabaseTable, account, exists)
+        .thenAccept(firstValue -> userAccountDatabaseTable.addAccount(userId, accountId))
+        .thenAccept(secondValue -> broadcastAccountRegistration(link, userId, accountId)));
   }
 
   private void broadcastAccountRegistration(
@@ -119,6 +114,7 @@ public class GoogleAccountController extends TaskwolfRestController {
   }
 
   private CompletableFuture<Void> storeGoogleAccount(
+    GoogleAccountDatabaseTable googleAccountDatabaseTable,
     GoogleAccount account, boolean exists
   ) {
     if (exists) {

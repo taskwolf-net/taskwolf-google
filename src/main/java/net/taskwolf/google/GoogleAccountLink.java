@@ -3,9 +3,7 @@ package net.taskwolf.google;
 import com.google.api.client.googleapis.auth.oauth2.GoogleRefreshTokenRequest;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
-import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import net.taskwolf.core.account.AccountLink;
 import net.taskwolf.core.iterator.AsyncIterator;
@@ -21,34 +19,29 @@ import java.util.concurrent.CompletableFuture;
 
 @Accessors(fluent = true)
 public class GoogleAccountLink implements AccountLink {
-  public static GoogleAccountLink create(
-    GoogleConfiguration googleConfiguration,
-    GoogleAccountDatabaseTable googleAccountDatabaseTable,
-    GoogleUserAccountDatabaseTable googleUserAccountDatabaseTable
-  ) {
-    return new GoogleAccountLink(googleConfiguration, googleAccountDatabaseTable,
-      googleUserAccountDatabaseTable, "");
-  }
-
-  @Getter(AccessLevel.PROTECTED)
-  private final GoogleConfiguration googleConfiguration;
-  @Getter(AccessLevel.PROTECTED)
-  private final GoogleAccountDatabaseTable googleAccountDatabaseTable;
-  @Getter(AccessLevel.PROTECTED)
-  private final GoogleUserAccountDatabaseTable googleUserAccountDatabaseTable;
+  @Getter
+  protected final GoogleConfiguration googleConfiguration;
+  @Getter
+  protected final GoogleAccountDatabaseTable googleAccountDatabaseTable;
+  @Getter
+  protected final GoogleUserAccountDatabaseTable googleUserAccountDatabaseTable;
   @Getter
   private final String module;
+  private final List<String> scopes;
 
   protected GoogleAccountLink(
     GoogleConfiguration googleConfiguration,
     GoogleAccountDatabaseTable googleAccountDatabaseTable,
     GoogleUserAccountDatabaseTable googleUserAccountDatabaseTable,
-    String module
+    String module, List<String> scopes
   ) {
     this.googleConfiguration = googleConfiguration;
     this.googleAccountDatabaseTable = googleAccountDatabaseTable;
     this.googleUserAccountDatabaseTable = googleUserAccountDatabaseTable;
     this.module = module;
+    this.scopes = scopes;
+    this.scopes.add("https://www.googleapis.com/auth/userinfo.email");
+    this.scopes.add("https://www.googleapis.com/auth/userinfo.profile");
   }
 
   public void registerAccount(UUID id, String identifier) throws Exception {
@@ -119,19 +112,18 @@ public class GoogleAccountLink implements AccountLink {
     googleUserAccountDatabaseTable.removeAccount(id, identifier);
   }
 
-  private static final String[] GOOGLE_SCOPES = {"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile", "https://mail.google.com/", "https://www.googleapis.com/auth/gmail.settings.basic", "https://www.googleapis.com/auth/gmail.labels", "https://www.googleapis.com/auth/calendar", "https://www.googleapis.com/auth/calendar.events"};
-  private static final String GOOGLE_REGISTRATION_URL = "https://accounts.google.com/o/oauth2/auth?access_type=offline&prompt=consent&client_id=GOOGLE_CLIENT_ID&redirect_uri=https://api.taskwolf.net/v1/google/account/add/&state=TASKWOLF-STATE&response_type=code&scope=" + String.join(" ", GOOGLE_SCOPES);
+  private static final String GOOGLE_REGISTRATION_URL = "https://accounts.google.com/o/oauth2/auth?access_type=offline&prompt=consent&client_id=GOOGLE_CLIENT_ID&redirect_uri=https://api.taskwolf.net/v1/google/account/add/&state=TASKWOLF-STATE&response_type=code&scope=";
 
   @Override
   public String registrationUrl(UUID id, String apiKey) {
     return GOOGLE_REGISTRATION_URL.replace("TASKWOLF-STATE", apiKey +
-      "TASKWOLF-STATE-SPLIT" + id.toString() + "TASKWOLF-STATE-SPLIT" + module)
-      .replace("GOOGLE_CLIENT_ID", googleConfiguration.clientId());
+        "TASKWOLF-STATE-SPLIT" + id.toString() + "TASKWOLF-STATE-SPLIT" + module)
+      .replace("GOOGLE_CLIENT_ID", googleConfiguration.clientId()) +
+      String.join(" ", scopes);
   }
 
   @Override
   public String description() {
-    return "Would you like to add another Google account to integrate it into " +
-      "your automation with the help of Taskwolf? Just click on the logo.";
+    return "google.account.link.description";
   }
 }

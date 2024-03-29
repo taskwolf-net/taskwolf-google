@@ -8,16 +8,14 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 public final class GoogleUserAccountDatabaseTable extends DatabaseTable {
-  private static final String TABLE_NAME = "google_user_account";
-
   public static GoogleUserAccountDatabaseTable create(
-    DatabaseConnection connection, DatabaseKeyspace keyspace
+    DatabaseConnection connection, DatabaseKeyspace keyspace, String tableName
   ) {
     var columns = Lists.<DatabaseColumn>newArrayList();
     columns.add(DatabaseColumn.create("user", DatabaseDataType.UUID,
       DatabaseColumn.Type.PRIMARY_KEY));
     columns.add(DatabaseListColumn.create("accounts", DatabaseDataType.TEXT));
-    return new GoogleUserAccountDatabaseTable(connection, keyspace, TABLE_NAME, columns);
+    return new GoogleUserAccountDatabaseTable(connection, keyspace, tableName, columns);
   }
 
   private GoogleUserAccountDatabaseTable(

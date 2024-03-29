@@ -12,17 +12,11 @@ import org.springframework.context.ConfigurableApplicationContext;
 @Singleton
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE, onConstructor = @__({@Inject}))
 public final class GoogleContextInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
-  private final GoogleAccountDatabaseTable googleAccountDatabaseTable;
-  private final GoogleUserAccountDatabaseTable googleUserAccountDatabaseTable;
   private final GoogleAccountLinkRepository googleAccountLinkRepository;
 
   @Override
   public void initialize(ConfigurableApplicationContext applicationContext) {
     var beanFactory = applicationContext.getBeanFactory();
-    beanFactory.registerSingleton("googleAccountDatabaseTable",
-      googleAccountDatabaseTable);
-    beanFactory.registerSingleton("googleUserAccountDatabaseTable",
-      googleUserAccountDatabaseTable);
     beanFactory.registerSingleton("googleAccountLinkRepository",
       googleAccountLinkRepository);
   }

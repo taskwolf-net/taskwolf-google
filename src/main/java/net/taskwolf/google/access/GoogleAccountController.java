@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import net.taskwolf.access.verification.VerificationController;
 import net.taskwolf.core.access.TaskwolfRestController;
+import net.taskwolf.core.grafana.GrafanaUserFactory;
 import net.taskwolf.core.user.*;
 import net.taskwolf.google.GoogleAccountLink;
 import net.taskwolf.google.GoogleAccountLinkRepository;
@@ -33,19 +34,22 @@ public class GoogleAccountController extends TaskwolfRestController {
   private final String clientSecret;
   private final GoogleAccountLinkRepository googleAccountLinkRepository;
   private final VerificationController verificationController;
+  private final GrafanaUserFactory grafanaUserFactory;
 
   private GoogleAccountController(
     Key secretKey, UserDatabaseTable userDatabaseTable,
     @Qualifier("clientId") String clientId,
     @Qualifier("clientSecret") String clientSecret,
     GoogleAccountLinkRepository googleAccountLinkRepository,
-    VerificationController verificationController
+    VerificationController verificationController,
+    GrafanaUserFactory grafanaUserFactory
   ) {
     super(secretKey, userDatabaseTable);
     this.clientId = clientId;
     this.clientSecret = clientSecret;
     this.googleAccountLinkRepository = googleAccountLinkRepository;
     this.verificationController = verificationController;
+    this.grafanaUserFactory = grafanaUserFactory;
   }
 
   @RequestMapping(path = "/google/account/add/", method = RequestMethod.GET)
@@ -140,11 +144,15 @@ public class GoogleAccountController extends TaskwolfRestController {
     GoogleAccount account, boolean userExists, UUID userId,
     HttpServletResponse response
   ) {
+    var token = generateApiKey(userId);
+    var grafanaUser = grafanaUserFactory.createUser(userId);
     if (!userExists) {
       verificationController.insertNewUser(userId, account.displayName(),
         account.emailAddress(), "");
+      grafanaUser.create(token);
+    } else {
+      grafanaUser.updateApiKey(token);
     }
-    var token = generateApiKey(userId);
     var date = new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 30).toString();
     var cookieContent = String.format(TOKEN_COOKIE_FORMAT, token, date);
     response.addHeader("Set-Cookie", cookieContent);

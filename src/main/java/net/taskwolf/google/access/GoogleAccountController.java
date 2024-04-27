@@ -6,12 +6,14 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.people.v1.PeopleService;
 import com.google.api.services.people.v1.model.Person;
+import com.google.common.collect.Lists;
 import io.jsonwebtoken.Jwts;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import net.taskwolf.access.verification.VerificationController;
 import net.taskwolf.core.access.TaskwolfRestController;
+import net.taskwolf.core.distribution.Distribution;
 import net.taskwolf.core.grafana.GrafanaUserFactory;
+import net.taskwolf.core.notification.NotificationDatabaseTable;
 import net.taskwolf.core.user.*;
 import net.taskwolf.google.GoogleAccountLink;
 import net.taskwolf.google.GoogleAccountLinkRepository;
@@ -33,7 +35,11 @@ public class GoogleAccountController extends TaskwolfRestController {
   private final String clientId;
   private final String clientSecret;
   private final GoogleAccountLinkRepository googleAccountLinkRepository;
-  private final VerificationController verificationController;
+  private final UserTargetDatabaseTable userTargetDatabaseTable;
+  private final ProfilePictureDatabaseTable profilePictureDatabaseTable;
+  private final String defaultProfilePicture;
+  private final NotificationDatabaseTable notificationDatabaseTable;
+  private final Distribution distribution;
   private final GrafanaUserFactory grafanaUserFactory;
 
   private GoogleAccountController(
@@ -41,14 +47,21 @@ public class GoogleAccountController extends TaskwolfRestController {
     @Qualifier("clientId") String clientId,
     @Qualifier("clientSecret") String clientSecret,
     GoogleAccountLinkRepository googleAccountLinkRepository,
-    VerificationController verificationController,
+    UserTargetDatabaseTable userTargetDatabaseTable,
+    ProfilePictureDatabaseTable profilePictureDatabaseTable,
+    @Qualifier("defaultProfilePicture") String defaultProfilePicture,
+    NotificationDatabaseTable notificationDatabaseTable, Distribution distribution,
     GrafanaUserFactory grafanaUserFactory
   ) {
     super(secretKey, userDatabaseTable);
     this.clientId = clientId;
     this.clientSecret = clientSecret;
     this.googleAccountLinkRepository = googleAccountLinkRepository;
-    this.verificationController = verificationController;
+    this.userTargetDatabaseTable = userTargetDatabaseTable;
+    this.profilePictureDatabaseTable = profilePictureDatabaseTable;
+    this.defaultProfilePicture = defaultProfilePicture;
+    this.notificationDatabaseTable = notificationDatabaseTable;
+    this.distribution = distribution;
     this.grafanaUserFactory = grafanaUserFactory;
   }
 
@@ -147,8 +160,7 @@ public class GoogleAccountController extends TaskwolfRestController {
     var token = generateApiKey(userId);
     var grafanaUser = grafanaUserFactory.createUser(userId);
     if (!userExists) {
-      verificationController.insertNewUser(userId, account.displayName(),
-        account.emailAddress(), "");
+      insertNewUser(userId, account.displayName(), account.emailAddress(), "");
       grafanaUser.create(token);
     } else {
       grafanaUser.updateApiKey(token);
@@ -161,6 +173,17 @@ public class GoogleAccountController extends TaskwolfRestController {
     } catch (Exception exception) {
       exception.printStackTrace();
     }
+  }
+
+  private void insertNewUser(
+    UUID userId, String name, String email, String passwordHash
+  ) {
+    userDatabaseTable().insertUser(userId, name, email, passwordHash, "en",
+      Lists.newArrayList());
+    userTargetDatabaseTable.insertTarget(userId, userId);
+    profilePictureDatabaseTable.insertProfilePicture(userId, defaultProfilePicture);
+    notificationDatabaseTable.insertNotificationSettings(userId, true, true);
+    distribution.addUser(userId);
   }
 
   private static final long EXPIRATION_TIME = 1000L * 60 * 60 * 24 * 30;

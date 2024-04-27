@@ -43,6 +43,7 @@ dependencies {
   testCompileOnly("org.junit.jupiter:junit-jupiter:5.10.2")
 
   compileOnly("net.taskwolf:core:1.0.0-SNAPSHOT")
+  compileOnly("net.taskwolf:access:1.0.0-SNAPSHOT")
 
   compileOnly("com.google.inject:guice:7.0.0")
 

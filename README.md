@@ -4,6 +4,6 @@ This repository contains the background structure for all Taskwolf Google module
 
 ## Status
 
-|             | Build Status                                                                                                         |
-|-------------|----------------------------------------------------------------------------------------------------------------------|
-| Master      | ![Java CI with Gradle](https://github.com/TaskwolfNET/taskwolf-google/workflows/Java%20CI%20with%20Gradle/badge.svg) |
+|             | Build Status                                                                                     |
+|-------------|--------------------------------------------------------------------------------------------------|
+| Master      | ![Java CI with Gradle](https://git.taskwolf.net/root/taskwolf-google/badges/master/pipeline.svg) |

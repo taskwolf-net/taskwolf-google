@@ -24,10 +24,10 @@ public class GoogleAccountSelect implements InputComponentSelect {
   ) {
     var futureResponse = new CompletableFuture<List<String>>();
     googleUserAccountDatabaseTable.findAccountsIfExists(user).thenApply(accountIds ->
-      AsyncIterator.execute(accountIds, googleAccountDatabaseTable::findAccount,
-        accountIds.size(), accounts -> futureResponse.complete(accounts.stream().map(account ->
-            new JSONObject(Map.of("identifier", account.id(), "name",
-              account.displayName() + " | " + account.emailAddress())).toString())
+      AsyncIterator.execute(accountIds, googleAccountDatabaseTable::findAccount)
+        .thenAccept(accounts -> futureResponse.complete(accounts.stream().map(
+          account -> new JSONObject(Map.of("identifier", account.id(), "name",
+            account.displayName() + " | " + account.emailAddress())).toString())
           .collect(Collectors.toList()))));
     return futureResponse;
   }

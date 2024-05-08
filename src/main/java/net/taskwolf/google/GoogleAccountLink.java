@@ -58,8 +58,8 @@ public class GoogleAccountLink implements AccountLink {
   public CompletableFuture<List<String>> findAccounts(UUID id) {
     var futureResponse = new CompletableFuture<List<String>>();
     googleUserAccountDatabaseTable.findAccounts(id).thenApply(accountIds ->
-      AsyncIterator.execute(accountIds, googleAccountDatabaseTable::findAccount,
-        accountIds.size(), accounts -> futureResponse.complete(completeAccountFinding(accounts))));
+      AsyncIterator.execute(accountIds, googleAccountDatabaseTable::findAccount)
+        .thenAccept(accounts -> futureResponse.complete(completeAccountFinding(accounts))));
     return futureResponse;
   }
 
@@ -74,8 +74,8 @@ public class GoogleAccountLink implements AccountLink {
 
   private void checkAccountsTokenRefresh(UUID id) {
     googleUserAccountDatabaseTable.findAccounts(id).thenApply(accountIds ->
-      AsyncIterator.execute(accountIds, googleAccountDatabaseTable::findAccount,
-        accountIds.size(), this::checkAccountsTokenRefresh));
+      AsyncIterator.execute(accountIds, googleAccountDatabaseTable::findAccount)
+        .thenAccept(this::checkAccountsTokenRefresh));
   }
 
   private void checkAccountsTokenRefresh(List<GoogleAccount> accounts) {

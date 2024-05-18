@@ -11,10 +11,10 @@ import io.jsonwebtoken.Jwts;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import net.taskwolf.core.access.TaskwolfRestController;
-import net.taskwolf.core.distribution.Distribution;
 import net.taskwolf.core.grafana.GrafanaUserFactory;
 import net.taskwolf.core.notification.NotificationDatabaseTable;
 import net.taskwolf.core.user.*;
+import net.taskwolf.core.worker.WorkerDistribution;
 import net.taskwolf.google.GoogleAccountLink;
 import net.taskwolf.google.GoogleAccountLinkRepository;
 import net.taskwolf.google.account.GoogleAccount;
@@ -39,7 +39,7 @@ public class GoogleAccountController extends TaskwolfRestController {
   private final ProfilePictureDatabaseTable profilePictureDatabaseTable;
   private final String defaultProfilePicture;
   private final NotificationDatabaseTable notificationDatabaseTable;
-  private final Distribution distribution;
+  private final WorkerDistribution distribution;
   private final GrafanaUserFactory grafanaUserFactory;
 
   private GoogleAccountController(
@@ -50,8 +50,8 @@ public class GoogleAccountController extends TaskwolfRestController {
     UserTargetDatabaseTable userTargetDatabaseTable,
     ProfilePictureDatabaseTable profilePictureDatabaseTable,
     @Qualifier("defaultProfilePicture") String defaultProfilePicture,
-    NotificationDatabaseTable notificationDatabaseTable, Distribution distribution,
-    GrafanaUserFactory grafanaUserFactory
+    NotificationDatabaseTable notificationDatabaseTable,
+    WorkerDistribution distribution, GrafanaUserFactory grafanaUserFactory
   ) {
     super(secretKey, userDatabaseTable);
     this.clientId = clientId;

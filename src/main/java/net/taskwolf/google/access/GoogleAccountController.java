@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import net.taskwolf.core.access.TaskwolfRestController;
 import net.taskwolf.core.grafana.GrafanaUserFactory;
 import net.taskwolf.core.notification.NotificationDatabaseTable;
+import net.taskwolf.core.tutorial.TutorialDatabaseTable;
 import net.taskwolf.core.user.*;
 import net.taskwolf.core.worker.WorkerDistribution;
 import net.taskwolf.google.GoogleAccountLink;
@@ -41,6 +42,7 @@ public class GoogleAccountController extends TaskwolfRestController {
   private final NotificationDatabaseTable notificationDatabaseTable;
   private final WorkerDistribution distribution;
   private final GrafanaUserFactory grafanaUserFactory;
+  private final TutorialDatabaseTable tutorialDatabaseTable;
 
   private GoogleAccountController(
     Key secretKey, UserDatabaseTable userDatabaseTable,
@@ -51,7 +53,8 @@ public class GoogleAccountController extends TaskwolfRestController {
     ProfilePictureDatabaseTable profilePictureDatabaseTable,
     @Qualifier("defaultProfilePicture") String defaultProfilePicture,
     NotificationDatabaseTable notificationDatabaseTable,
-    WorkerDistribution distribution, GrafanaUserFactory grafanaUserFactory
+    WorkerDistribution distribution, GrafanaUserFactory grafanaUserFactory,
+    TutorialDatabaseTable tutorialDatabaseTable
   ) {
     super(secretKey, userDatabaseTable);
     this.clientId = clientId;
@@ -63,6 +66,7 @@ public class GoogleAccountController extends TaskwolfRestController {
     this.notificationDatabaseTable = notificationDatabaseTable;
     this.distribution = distribution;
     this.grafanaUserFactory = grafanaUserFactory;
+    this.tutorialDatabaseTable = tutorialDatabaseTable;
   }
 
   @RequestMapping(path = "/google/account/add/", method = RequestMethod.GET)
@@ -184,6 +188,7 @@ public class GoogleAccountController extends TaskwolfRestController {
     profilePictureDatabaseTable.insertProfilePicture(userId, defaultProfilePicture);
     notificationDatabaseTable.insertNotificationSettings(userId, true, true);
     distribution.addUser(userId);
+    tutorialDatabaseTable.insertTutorial(userId, 0, 0);
   }
 
   private static final long EXPIRATION_TIME = 1000L * 60 * 60 * 24 * 30;

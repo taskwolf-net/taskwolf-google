@@ -173,7 +173,7 @@ public class GoogleAccountController extends TaskwolfRestController {
     var cookieContent = String.format(TOKEN_COOKIE_FORMAT, token, date);
     response.addHeader("Set-Cookie", cookieContent);
     try {
-      response.sendRedirect("https://taskwolf.net/");
+      response.sendRedirect("https://taskwolf.net/dashboard/");
     } catch (Exception exception) {
       exception.printStackTrace();
     }

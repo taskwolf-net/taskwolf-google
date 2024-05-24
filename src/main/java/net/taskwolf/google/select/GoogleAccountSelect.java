@@ -2,6 +2,7 @@ package net.taskwolf.google.select;
 
 import lombok.RequiredArgsConstructor;
 import net.taskwolf.core.iterator.AsyncIterator;
+import net.taskwolf.core.user.User;
 import net.taskwolf.core.workflow.component.input.InputComponentSelect;
 import net.taskwolf.google.account.GoogleAccountDatabaseTable;
 import net.taskwolf.google.account.GoogleUserAccountDatabaseTable;
@@ -20,10 +21,10 @@ public class GoogleAccountSelect implements InputComponentSelect {
 
   @Override
   public CompletableFuture<List<String>> compile(
-    UUID user, Map<String, String> previousInputs
+    User user, UUID target, Map<String, String> previousInputs
   ) {
     var futureResponse = new CompletableFuture<List<String>>();
-    googleUserAccountDatabaseTable.findAccountsIfExists(user).thenApply(accountIds ->
+    googleUserAccountDatabaseTable.findAccountsIfExists(target).thenApply(accountIds ->
       AsyncIterator.execute(accountIds, googleAccountDatabaseTable::findAccount)
         .thenAccept(accounts -> futureResponse.complete(accounts.stream().map(
           account -> new JSONObject(Map.of("identifier", account.id(), "name",

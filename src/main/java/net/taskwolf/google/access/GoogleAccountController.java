@@ -37,8 +37,6 @@ public class GoogleAccountController extends TaskwolfRestController {
   private final String clientSecret;
   private final GoogleAccountLinkRepository googleAccountLinkRepository;
   private final UserTargetDatabaseTable userTargetDatabaseTable;
-  private final ProfilePictureDatabaseTable profilePictureDatabaseTable;
-  private final String defaultProfilePicture;
   private final NotificationDatabaseTable notificationDatabaseTable;
   private final WorkerDistribution distribution;
   private final GrafanaUserFactory grafanaUserFactory;
@@ -50,8 +48,6 @@ public class GoogleAccountController extends TaskwolfRestController {
     @Qualifier("clientSecret") String clientSecret,
     GoogleAccountLinkRepository googleAccountLinkRepository,
     UserTargetDatabaseTable userTargetDatabaseTable,
-    ProfilePictureDatabaseTable profilePictureDatabaseTable,
-    @Qualifier("defaultProfilePicture") String defaultProfilePicture,
     NotificationDatabaseTable notificationDatabaseTable,
     WorkerDistribution distribution, GrafanaUserFactory grafanaUserFactory,
     TutorialDatabaseTable tutorialDatabaseTable
@@ -61,8 +57,6 @@ public class GoogleAccountController extends TaskwolfRestController {
     this.clientSecret = clientSecret;
     this.googleAccountLinkRepository = googleAccountLinkRepository;
     this.userTargetDatabaseTable = userTargetDatabaseTable;
-    this.profilePictureDatabaseTable = profilePictureDatabaseTable;
-    this.defaultProfilePicture = defaultProfilePicture;
     this.notificationDatabaseTable = notificationDatabaseTable;
     this.distribution = distribution;
     this.grafanaUserFactory = grafanaUserFactory;
@@ -185,7 +179,6 @@ public class GoogleAccountController extends TaskwolfRestController {
     userDatabaseTable().insertUser(userId, name, email, passwordHash, "en",
       Lists.newArrayList());
     userTargetDatabaseTable.insertTarget(userId, userId);
-    profilePictureDatabaseTable.insertProfilePicture(userId, defaultProfilePicture);
     notificationDatabaseTable.insertNotificationSettings(userId, true, true);
     distribution.addUser(userId);
     tutorialDatabaseTable.insertTutorial(userId, 0, 0);

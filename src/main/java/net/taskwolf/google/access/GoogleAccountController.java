@@ -11,7 +11,6 @@ import io.jsonwebtoken.Jwts;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import net.taskwolf.core.access.TaskwolfRestController;
-import net.taskwolf.core.grafana.GrafanaUserFactory;
 import net.taskwolf.core.notification.NotificationDatabaseTable;
 import net.taskwolf.core.tutorial.TutorialDatabaseTable;
 import net.taskwolf.core.user.*;
@@ -39,7 +38,6 @@ public class GoogleAccountController extends TaskwolfRestController {
   private final UserTargetDatabaseTable userTargetDatabaseTable;
   private final NotificationDatabaseTable notificationDatabaseTable;
   private final WorkerDistribution distribution;
-  private final GrafanaUserFactory grafanaUserFactory;
   private final TutorialDatabaseTable tutorialDatabaseTable;
 
   private GoogleAccountController(
@@ -49,8 +47,7 @@ public class GoogleAccountController extends TaskwolfRestController {
     GoogleAccountLinkRepository googleAccountLinkRepository,
     UserTargetDatabaseTable userTargetDatabaseTable,
     NotificationDatabaseTable notificationDatabaseTable,
-    WorkerDistribution distribution, GrafanaUserFactory grafanaUserFactory,
-    TutorialDatabaseTable tutorialDatabaseTable
+    WorkerDistribution distribution, TutorialDatabaseTable tutorialDatabaseTable
   ) {
     super(secretKey, userDatabaseTable);
     this.clientId = clientId;
@@ -59,7 +56,6 @@ public class GoogleAccountController extends TaskwolfRestController {
     this.userTargetDatabaseTable = userTargetDatabaseTable;
     this.notificationDatabaseTable = notificationDatabaseTable;
     this.distribution = distribution;
-    this.grafanaUserFactory = grafanaUserFactory;
     this.tutorialDatabaseTable = tutorialDatabaseTable;
   }
 
@@ -155,14 +151,10 @@ public class GoogleAccountController extends TaskwolfRestController {
     GoogleAccount account, boolean userExists, UUID userId,
     HttpServletResponse response
   ) {
-    var token = generateApiKey(userId);
-    var grafanaUser = grafanaUserFactory.createUser(userId);
     if (!userExists) {
       insertNewUser(userId, account.displayName(), account.emailAddress(), "");
-      grafanaUser.create(token);
-    } else {
-      grafanaUser.updateApiKey(token);
     }
+    var token = generateApiKey(userId);
     var date = new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 30).toString();
     var cookieContent = String.format(TOKEN_COOKIE_FORMAT, token, date);
     response.addHeader("Set-Cookie", cookieContent);

@@ -6,15 +6,12 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.people.v1.PeopleService;
 import com.google.api.services.people.v1.model.Person;
-import com.google.common.collect.Lists;
-import io.jsonwebtoken.Jwts;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import net.taskwolf.access.verification.Verification;
+import net.taskwolf.access.verification.VerificationLoginController;
 import net.taskwolf.core.access.TaskwolfRestController;
-import net.taskwolf.core.notification.NotificationDatabaseTable;
-import net.taskwolf.core.tutorial.TutorialDatabaseTable;
 import net.taskwolf.core.user.*;
-import net.taskwolf.core.worker.WorkerDistribution;
 import net.taskwolf.google.GoogleAccountLink;
 import net.taskwolf.google.GoogleAccountLinkRepository;
 import net.taskwolf.google.account.GoogleAccount;
@@ -25,9 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URLDecoder;
 import java.security.Key;
-import java.util.AbstractMap;
-import java.util.Date;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
@@ -35,28 +30,20 @@ public class GoogleAccountController extends TaskwolfRestController {
   private final String clientId;
   private final String clientSecret;
   private final GoogleAccountLinkRepository googleAccountLinkRepository;
-  private final UserTargetDatabaseTable userTargetDatabaseTable;
-  private final NotificationDatabaseTable notificationDatabaseTable;
-  private final WorkerDistribution distribution;
-  private final TutorialDatabaseTable tutorialDatabaseTable;
+  private final VerificationLoginController verificationLoginController;
 
   private GoogleAccountController(
     Key secretKey, UserDatabaseTable userDatabaseTable,
     @Qualifier("clientId") String clientId,
     @Qualifier("clientSecret") String clientSecret,
     GoogleAccountLinkRepository googleAccountLinkRepository,
-    UserTargetDatabaseTable userTargetDatabaseTable,
-    NotificationDatabaseTable notificationDatabaseTable,
-    WorkerDistribution distribution, TutorialDatabaseTable tutorialDatabaseTable
+    VerificationLoginController verificationLoginController
   ) {
     super(secretKey, userDatabaseTable);
     this.clientId = clientId;
     this.clientSecret = clientSecret;
     this.googleAccountLinkRepository = googleAccountLinkRepository;
-    this.userTargetDatabaseTable = userTargetDatabaseTable;
-    this.notificationDatabaseTable = notificationDatabaseTable;
-    this.distribution = distribution;
-    this.tutorialDatabaseTable = tutorialDatabaseTable;
+    this.verificationLoginController = verificationLoginController;
   }
 
   @RequestMapping(path = "/google/account/add/", method = RequestMethod.GET)
@@ -131,60 +118,62 @@ public class GoogleAccountController extends TaskwolfRestController {
     return futureResponse;
   }
 
-  private CompletableFuture<Void> googleLogin(GoogleAccount account, HttpServletResponse response) {
-    var futureResponse = new CompletableFuture<Void>();
-    var email = account.emailAddress();
-    userDatabaseTable().userExists(email).thenApply(exists -> (exists ?
-        userDatabaseTable().findUser(email).thenApply(User::id) :
-        userDatabaseTable().generateAvailableUserId())
-        .thenApply(id -> new AbstractMap.SimpleEntry<>(exists, id)))
-      .thenAccept(future -> future.thenAccept(entry ->
-          finishGoogleLogin(account, entry.getKey(), entry.getValue(), response))
-        .thenAccept(futureResponse::complete));
-    return futureResponse;
+  private CompletableFuture<Void> googleLogin(
+    GoogleAccount account, HttpServletResponse response
+  ) {
+    return userDatabaseTable().userExists(account.emailAddress())
+      .thenCompose(exists -> googleLogin(account, response, exists));
+  }
+
+  private CompletableFuture<Void> googleLogin(
+    GoogleAccount account, HttpServletResponse response, boolean userExists
+  ) {
+    try {
+      if (!userExists) {
+        response.sendRedirect("https://taskwolf.net/register/");
+        return CompletableFuture.completedFuture(null);
+      }
+      var verification = Verification.create(userDatabaseTable(), secretKey(),
+        account.emailAddress(), "");
+      var futureResponse = new CompletableFuture<Map<String, Object>>();
+      verificationLoginController.processAuthorizedLogin(verification, futureResponse);
+      return futureResponse.thenAccept(result -> finishGoogleLogin(result, response));
+    } catch (Exception exception) {
+      exception.printStackTrace();
+      return CompletableFuture.completedFuture(null);
+    }
   }
 
   private static final String TOKEN_COOKIE_FORMAT =
     "token=%s; Domain=.taskwolf.net; Path=/; Expires=%s; Secure";
 
   private void finishGoogleLogin(
-    GoogleAccount account, boolean userExists, UUID userId,
-    HttpServletResponse response
+    Map<String, Object> loginResult, HttpServletResponse response
   ) {
-    if (!userExists) {
-      insertNewUser(userId, account.displayName(), account.emailAddress(), "");
-    }
-    var token = generateApiKey(userId);
-    var date = new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 30).toString();
-    var cookieContent = String.format(TOKEN_COOKIE_FORMAT, token, date);
-    response.addHeader("Set-Cookie", cookieContent);
     try {
+      if (!((boolean) loginResult.get("success"))) {
+        processLoginFailure(loginResult, response);
+        return;
+      }
+      var date = new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 30).toString();
+      var cookieContent = String.format(TOKEN_COOKIE_FORMAT,
+        loginResult.get("apiKey"), date);
+      response.addHeader("Set-Cookie", cookieContent);
       response.sendRedirect("https://taskwolf.net/dashboard/");
     } catch (Exception exception) {
       exception.printStackTrace();
     }
   }
 
-  private void insertNewUser(
-    UUID userId, String name, String email, String passwordHash
-  ) {
-    userDatabaseTable().insertUser(userId, name, email, passwordHash, "en",
-      Lists.newArrayList());
-    userTargetDatabaseTable.insertTarget(userId, userId);
-    notificationDatabaseTable.insertNotificationSettings(userId, true, true);
-    distribution.addUser(userId);
-    tutorialDatabaseTable.insertTutorial(userId, 0, 0);
-  }
-
-  private static final long EXPIRATION_TIME = 1000L * 60 * 60 * 24 * 30;
-
-  private String generateApiKey(UUID userId) {
-    var expiration = new Date(System.currentTimeMillis() + EXPIRATION_TIME);
-    return Jwts.builder()
-      .setExpiration(expiration)
-      .claim("id", userId.toString())
-      .signWith(secretKey())
-      .compact();
+  private void processLoginFailure(
+    Map<String, Object> loginResult, HttpServletResponse response
+  ) throws Exception {
+    var errorCode = (int) loginResult.get("error");
+    if (errorCode == 1001 || errorCode == 1003) {
+      response.sendRedirect("https://taskwolf.net/login/");
+    } else if (errorCode == 1002) {
+      response.sendRedirect("https://taskwolf.net/pricing/");
+    }
   }
 
   private GoogleAccount fetchGoogleAccount(String code, String redirectUri) {

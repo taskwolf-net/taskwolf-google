@@ -27,19 +27,21 @@ import java.util.concurrent.CompletableFuture;
 
 @RestController
 public class GoogleAccountController extends TaskwolfRestController {
+  private final Key homeKey;
   private final String clientId;
   private final String clientSecret;
   private final GoogleAccountLinkRepository googleAccountLinkRepository;
   private final VerificationLoginController verificationLoginController;
 
   private GoogleAccountController(
-    Key secretKey, UserDatabaseTable userDatabaseTable,
-    @Qualifier("clientId") String clientId,
+    @Qualifier("homeKey") Key homeKey, @Qualifier("productKey") Key productKey,
+    UserDatabaseTable userDatabaseTable, @Qualifier("clientId") String clientId,
     @Qualifier("clientSecret") String clientSecret,
     GoogleAccountLinkRepository googleAccountLinkRepository,
     VerificationLoginController verificationLoginController
   ) {
-    super(secretKey, userDatabaseTable);
+    super(productKey, userDatabaseTable);
+    this.homeKey = homeKey;
     this.clientId = clientId;
     this.clientSecret = clientSecret;
     this.googleAccountLinkRepository = googleAccountLinkRepository;
@@ -133,8 +135,8 @@ public class GoogleAccountController extends TaskwolfRestController {
         response.sendRedirect("https://taskwolf.net/register/");
         return CompletableFuture.completedFuture(null);
       }
-      var verification = Verification.create(userDatabaseTable(), secretKey(),
-        account.emailAddress(), "");
+      var verification = Verification.create(userDatabaseTable(), homeKey,
+        secretKey(), account.emailAddress(), "");
       var futureResponse = new CompletableFuture<Map<String, Object>>();
       verificationLoginController.processAuthorizedLogin(verification, futureResponse);
       return futureResponse.thenAccept(result -> finishGoogleLogin(result, response));
@@ -144,8 +146,10 @@ public class GoogleAccountController extends TaskwolfRestController {
     }
   }
 
-  private static final String TOKEN_COOKIE_FORMAT =
+  private static final String PRODUCT_TOKEN_COOKIE_FORMAT =
     "token=%s; Domain=.taskwolf.net; Path=/; Expires=%s; Secure";
+  private static final String HOME_TOKEN_COOKIE_FORMAT =
+    "home-token=%s; Domain=.taskwolf.net; Path=/; Expires=%s; Secure";
 
   private void finishGoogleLogin(
     Map<String, Object> loginResult, HttpServletResponse response
@@ -156,9 +160,10 @@ public class GoogleAccountController extends TaskwolfRestController {
         return;
       }
       var date = new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 30).toString();
-      var cookieContent = String.format(TOKEN_COOKIE_FORMAT,
-        loginResult.get("apiKey"), date);
-      response.addHeader("Set-Cookie", cookieContent);
+      response.addHeader("Set-Cookie", String.format(PRODUCT_TOKEN_COOKIE_FORMAT,
+        loginResult.get("productApiKey"), date));
+      response.addHeader("Set-Cookie", String.format(HOME_TOKEN_COOKIE_FORMAT,
+        loginResult.get("homeApiKey"), date));
       response.sendRedirect("https://taskwolf.net/dashboard/");
     } catch (Exception exception) {
       exception.printStackTrace();

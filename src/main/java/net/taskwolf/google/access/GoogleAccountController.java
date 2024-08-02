@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import net.taskwolf.access.verification.Verification;
 import net.taskwolf.access.verification.VerificationLoginController;
 import net.taskwolf.core.access.TaskwolfRestController;
+import net.taskwolf.core.organization.team.TeamTargetDatabaseTable;
 import net.taskwolf.core.user.*;
 import net.taskwolf.google.GoogleAccountLink;
 import net.taskwolf.google.GoogleAccountLinkRepository;
@@ -32,13 +33,15 @@ public class GoogleAccountController extends TaskwolfRestController {
   private final String clientSecret;
   private final GoogleAccountLinkRepository googleAccountLinkRepository;
   private final VerificationLoginController verificationLoginController;
+  private final TeamTargetDatabaseTable teamTargetDatabaseTable;
 
   private GoogleAccountController(
     @Qualifier("homeKey") Key homeKey, @Qualifier("productKey") Key productKey,
     UserDatabaseTable userDatabaseTable, @Qualifier("clientId") String clientId,
     @Qualifier("clientSecret") String clientSecret,
     GoogleAccountLinkRepository googleAccountLinkRepository,
-    VerificationLoginController verificationLoginController
+    VerificationLoginController verificationLoginController,
+    TeamTargetDatabaseTable teamTargetDatabaseTable
   ) {
     super(productKey, userDatabaseTable);
     this.homeKey = homeKey;
@@ -46,6 +49,7 @@ public class GoogleAccountController extends TaskwolfRestController {
     this.clientSecret = clientSecret;
     this.googleAccountLinkRepository = googleAccountLinkRepository;
     this.verificationLoginController = verificationLoginController;
+    this.teamTargetDatabaseTable = teamTargetDatabaseTable;
   }
 
   @RequestMapping(path = "/google/account/add/", method = RequestMethod.GET)
@@ -54,19 +58,20 @@ public class GoogleAccountController extends TaskwolfRestController {
     @RequestParam("code") String code, HttpServletResponse response
   ) throws Exception {
     response.sendRedirect("https://taskwolf.net/close/");
-    var splitted = state.split("TASKWOLF-STATE-SPLIT");
-    var apiKey = splitted[0];
+    var split = state.split("TASKWOLF-STATE-SPLIT");
+    var apiKey = split[0];
     if (!isValidApiKey(apiKey)) {
       return;
     }
-    var id = UUID.fromString(splitted[1]);
-    var module = splitted[2];
+    var id = UUID.fromString(split[1]);
+    var module = split[2];
     userDatabaseTable().findUser(findUserId(apiKey)).thenAccept(user ->
-      addAccount(user, id, module, code));
+      checkUserAuthorization(user, id).thenAccept(isAuthorized ->
+        addAccount(id, module, code, isAuthorized)));
   }
 
-  private void addAccount(User user, UUID id, String module, String code) {
-    if (!user.id().equals(id) && !user.organizations().contains(id)) {
+  private void addAccount(UUID id, String module, String code, boolean isAuthorized) {
+    if (!isAuthorized) {
       return;
     }
     new Thread(() -> googleAccountLinkRepository.findAccountLink(module)
@@ -222,5 +227,13 @@ public class GoogleAccountController extends TaskwolfRestController {
       exception.printStackTrace();
       return null;
     }
+  }
+
+  private CompletableFuture<Boolean> checkUserAuthorization(User user, UUID id) {
+    if (id.equals(user.id()) || user.organizations().contains(id)) {
+      return CompletableFuture.completedFuture(true);
+    }
+    return teamTargetDatabaseTable.findTargetSecured(user.id()).thenApply(
+      teamTarget -> teamTarget.map(uuid -> uuid.equals(id)).orElse(false));
   }
 }

@@ -4,9 +4,9 @@ import lombok.RequiredArgsConstructor;
 import net.taskwolf.core.iterator.AsyncIterator;
 import net.taskwolf.core.user.User;
 import net.taskwolf.core.workflow.component.input.InputComponentSelect;
+import net.taskwolf.core.workflow.component.input.InputComponentSelectEntry;
 import net.taskwolf.google.account.GoogleAccountDatabaseTable;
 import net.taskwolf.google.account.GoogleUserAccountDatabaseTable;
-import org.json.JSONObject;
 
 import java.util.List;
 import java.util.Map;
@@ -20,16 +20,15 @@ public class GoogleAccountSelect implements InputComponentSelect {
   private final GoogleUserAccountDatabaseTable googleUserAccountDatabaseTable;
 
   @Override
-  public CompletableFuture<List<String>> compile(
+  public CompletableFuture<List<InputComponentSelectEntry>> compile(
     User user, UUID target, Map<String, String> previousInputs
   ) {
-    var futureResponse = new CompletableFuture<List<String>>();
-    googleUserAccountDatabaseTable.findAccountsIfExists(target).thenApply(accountIds ->
-      AsyncIterator.execute(accountIds, googleAccountDatabaseTable::findAccount)
-        .thenAccept(accounts -> futureResponse.complete(accounts.stream().map(
-          account -> new JSONObject(Map.of("identifier", account.id(), "name",
-            account.displayName() + " | " + account.emailAddress())).toString())
-          .collect(Collectors.toList()))));
-    return futureResponse;
+    return googleUserAccountDatabaseTable.findAccountsIfExists(target)
+      .thenCompose(accountIds -> AsyncIterator.execute(accountIds,
+          googleAccountDatabaseTable::findAccount)
+        .thenApply(accounts -> accounts.stream().map(
+          account -> InputComponentSelectEntry.create(account.id(),
+            account.displayName() + " | " + account.emailAddress()))
+          .collect(Collectors.toList())));
   }
 }

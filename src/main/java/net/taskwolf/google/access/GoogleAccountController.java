@@ -160,8 +160,8 @@ public class GoogleAccountController extends TaskwolfRestController {
 
   private static final String PRODUCT_TOKEN_COOKIE_FORMAT =
     "token=%s; Domain=.taskwolf.net; Path=/; Expires=%s; Secure";
-  private static final String HOME_TOKEN_COOKIE_FORMAT =
-    "home-token=%s; Domain=.taskwolf.net; Path=/; Expires=%s; Secure";
+  private static final String REFRESH_TOKEN_COOKIE_FORMAT =
+    "refresh-token=%s; Domain=.taskwolf.net; Path=/; Expires=%s; Secure";
 
   private void finishGoogleLogin(
     Map<String, Object> loginResult, HttpServletResponse response
@@ -174,8 +174,8 @@ public class GoogleAccountController extends TaskwolfRestController {
       var date = new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 30).toString();
       response.addHeader("Set-Cookie", String.format(PRODUCT_TOKEN_COOKIE_FORMAT,
         loginResult.get("productApiKey"), date));
-      response.addHeader("Set-Cookie", String.format(HOME_TOKEN_COOKIE_FORMAT,
-        loginResult.get("homeApiKey"), date));
+      response.addHeader("Set-Cookie", String.format(REFRESH_TOKEN_COOKIE_FORMAT,
+        loginResult.get("refreshToken"), date));
       response.sendRedirect("https://taskwolf.net/dashboard/");
     } catch (Exception exception) {
       exception.printStackTrace();

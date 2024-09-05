@@ -2,6 +2,8 @@ package net.taskwolf.google.account;
 
 import com.google.common.collect.Lists;
 import net.taskwolf.core.database.*;
+import net.taskwolf.core.database.condition.DatabaseComparison;
+import net.taskwolf.core.database.condition.DatabaseCondition;
 
 import java.util.List;
 import java.util.UUID;
@@ -27,22 +29,26 @@ public final class GoogleUserAccountDatabaseTable extends DatabaseTable {
 
   public CompletableFuture<Void> addAccount(UUID userId, String accountId) {
     var futureResponse = new CompletableFuture<Void>();
-    exists(DatabaseCell.create(userId)).thenAccept(exists ->
-      addAccount(userId, accountId, exists).thenAccept(futureResponse::complete));
+    exists(userId).thenAccept(exists -> addAccount(userId, accountId, exists)
+      .thenAccept(futureResponse::complete));
     return futureResponse;
   }
 
-  private CompletableFuture<Void> addAccount(UUID userId, String accountId, boolean exists) {
+  private CompletableFuture<Void> addAccount(
+    UUID userId, String accountId, boolean exists
+  ) {
     if (!exists) {
       return insertAccount(userId, accountId);
     }
     var futureResponse = new CompletableFuture<Void>();
-    selectRow(DatabaseCell.create(userId)).thenAccept(row ->
-      addAccount(userId, accountId, row).thenAccept(futureResponse::complete));
+    selectRow(userId).thenAccept(row -> addAccount(userId, accountId, row)
+      .thenAccept(futureResponse::complete));
     return futureResponse;
   }
 
-  private CompletableFuture<Void> addAccount(UUID userId, String accountId, DatabaseRow row) {
+  private CompletableFuture<Void> addAccount(
+    UUID userId, String accountId, DatabaseRow row
+  ) {
     var accountIds = row.findCell(1).<String>listValue();
     if (accountIds.contains(accountId)) {
       return CompletableFuture.completedFuture(null);
@@ -56,7 +62,7 @@ public final class GoogleUserAccountDatabaseTable extends DatabaseTable {
   }
 
   public void removeAccount(UUID userId, String accountId) {
-    selectRow(DatabaseCell.create(userId)).thenAccept(row ->
+    selectRow(userId).thenAccept(row ->
       removeAccount(userId, accountId, row));
   }
 
@@ -71,20 +77,20 @@ public final class GoogleUserAccountDatabaseTable extends DatabaseTable {
   }
 
   public CompletableFuture<Void> updateAccounts(UUID userId, List<String> accountIds) {
-    return update(DatabaseCell.create(userId), DatabaseRow.of(userId, accountIds));
+    return update(userId, DatabaseRow.of(userId, accountIds));
   }
 
   public void deleteAccounts(UUID userId) {
-    delete(DatabaseCell.create(userId));
+    delete(userId);
   }
 
   public CompletableFuture<Boolean> accountExists(UUID userId) {
-    return exists(DatabaseCell.create(userId));
+    return exists(userId);
   }
 
   public CompletableFuture<Integer> accountOccurNumber(String account) {
-    return selectRows("accounts CONTAINS '" + account + "'")
-      .thenApply(List::size);
+    return selectRows(DatabaseCondition.of(DatabaseComparison.create("accounts",
+      account, DatabaseComparison.Type.CONTAINS))).thenApply(List::size);
   }
 
   public CompletableFuture<List<String>> findAccountsIfExists(UUID userId) {
@@ -104,7 +110,7 @@ public final class GoogleUserAccountDatabaseTable extends DatabaseTable {
   }
 
   public CompletableFuture<List<String>> findAccounts(UUID userId) {
-    return selectRow(DatabaseCell.create(userId))
+    return selectRow(userId)
       .thenApply(row -> row.findCell(1).listValue());
   }
 }

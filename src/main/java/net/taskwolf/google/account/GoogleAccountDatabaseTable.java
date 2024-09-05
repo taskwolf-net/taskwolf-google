@@ -50,19 +50,19 @@ public final class GoogleAccountDatabaseTable extends DatabaseTable {
     String id, String refreshToken, String displayName, String emailAddress,
     String accessToken, long expirationTime
   ) {
-    update(DatabaseCell.create(id), DatabaseRow.of(id, refreshToken, displayName,
+    update(id, DatabaseRow.of(id, refreshToken, displayName,
       emailAddress, accessToken, expirationTime));
   }
 
   public void deleteAccount(String id) {
-    delete(DatabaseCell.create(id));
+    delete(id);
   }
 
   public CompletableFuture<Boolean> accountExists(String id) {
-    return exists(DatabaseCell.create(id));
+    return exists(id);
   }
 
   public CompletableFuture<GoogleAccount> findAccount(String id) {
-    return selectRow(DatabaseCell.create(id)).thenApply(GoogleAccount::of);
+    return selectRow(id).thenApply(GoogleAccount::of);
   }
 }

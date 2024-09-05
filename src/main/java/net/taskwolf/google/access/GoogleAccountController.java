@@ -29,6 +29,7 @@ import java.util.concurrent.CompletableFuture;
 @RestController
 public class GoogleAccountController extends TaskwolfRestController {
   private final Key homeKey;
+  private final Key refreshKey;
   private final String clientId;
   private final String clientSecret;
   private final GoogleAccountLinkRepository googleAccountLinkRepository;
@@ -37,7 +38,8 @@ public class GoogleAccountController extends TaskwolfRestController {
 
   private GoogleAccountController(
     @Qualifier("homeKey") Key homeKey, @Qualifier("productKey") Key productKey,
-    UserDatabaseTable userDatabaseTable, @Qualifier("clientId") String clientId,
+    @Qualifier("refreshKey") Key refreshKey, UserDatabaseTable userDatabaseTable,
+    @Qualifier("clientId") String clientId,
     @Qualifier("clientSecret") String clientSecret,
     GoogleAccountLinkRepository googleAccountLinkRepository,
     VerificationLoginController verificationLoginController,
@@ -45,6 +47,7 @@ public class GoogleAccountController extends TaskwolfRestController {
   ) {
     super(productKey, userDatabaseTable);
     this.homeKey = homeKey;
+    this.refreshKey = refreshKey;
     this.clientId = clientId;
     this.clientSecret = clientSecret;
     this.googleAccountLinkRepository = googleAccountLinkRepository;
@@ -117,23 +120,26 @@ public class GoogleAccountController extends TaskwolfRestController {
 
   @RequestMapping(path = "/google/login/", method = RequestMethod.GET)
   public CompletableFuture<Void> googleLogin(
-    @RequestParam("code") String code, HttpServletResponse response
+    HttpServletRequest request, @RequestParam("code") String code,
+    HttpServletResponse response
   ) {
     var futureResponse = new CompletableFuture<Void>();
     new Thread(() -> googleLogin(fetchGoogleAccount(code, GOOGLE_LOGIN_REDIRECT_URI),
-      response).thenAccept(futureResponse::complete)).start();
+      request, response).thenAccept(futureResponse::complete)).start();
     return futureResponse;
   }
 
   private CompletableFuture<Void> googleLogin(
-    GoogleAccount account, HttpServletResponse response
+    GoogleAccount account, HttpServletRequest request,
+    HttpServletResponse response
   ) {
     return userDatabaseTable().userExists(account.emailAddress())
-      .thenCompose(exists -> googleLogin(account, response, exists));
+      .thenCompose(exists -> googleLogin(account, request, response, exists));
   }
 
   private CompletableFuture<Void> googleLogin(
-    GoogleAccount account, HttpServletResponse response, boolean userExists
+    GoogleAccount account, HttpServletRequest request,
+    HttpServletResponse response, boolean userExists
   ) {
     try {
       if (!userExists) {
@@ -141,9 +147,10 @@ public class GoogleAccountController extends TaskwolfRestController {
         return CompletableFuture.completedFuture(null);
       }
       var verification = Verification.create(userDatabaseTable(), homeKey,
-        secretKey(), account.emailAddress(), "");
+        secretKey(), refreshKey, account.emailAddress(), "");
       var futureResponse = new CompletableFuture<Map<String, Object>>();
-      verificationLoginController.processAuthorizedLogin(verification, futureResponse);
+      verificationLoginController.processAuthorizedLogin(request, verification,
+        futureResponse);
       return futureResponse.thenAccept(result -> finishGoogleLogin(result, response));
     } catch (Exception exception) {
       exception.printStackTrace();

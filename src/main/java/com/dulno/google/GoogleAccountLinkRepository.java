@@ -1,4 +1,4 @@
-package net.taskwolf.google;
+package com.dulno.google;
 
 import com.google.api.client.util.Lists;
 import com.google.inject.Inject;

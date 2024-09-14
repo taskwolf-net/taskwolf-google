@@ -1,11 +1,9 @@
-package net.taskwolf.google;
+package com.dulno.google;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import net.taskwolf.google.account.GoogleAccountDatabaseTable;
-import net.taskwolf.google.account.GoogleUserAccountDatabaseTable;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 

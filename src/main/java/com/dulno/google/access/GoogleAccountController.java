@@ -1,4 +1,4 @@
-package net.taskwolf.google.access;
+package com.dulno.google.access;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
 import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
@@ -8,16 +8,16 @@ import com.google.api.services.people.v1.PeopleService;
 import com.google.api.services.people.v1.model.Person;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import net.taskwolf.access.verification.Verification;
-import net.taskwolf.access.verification.VerificationLoginController;
-import net.taskwolf.core.access.TaskwolfRestController;
-import net.taskwolf.core.organization.team.TeamTargetDatabaseTable;
-import net.taskwolf.core.user.*;
-import net.taskwolf.google.GoogleAccountLink;
-import net.taskwolf.google.GoogleAccountLinkRepository;
-import net.taskwolf.google.account.GoogleAccount;
-import net.taskwolf.google.account.GoogleAccountDatabaseTable;
-import net.taskwolf.google.account.GoogleCredential;
+import com.dulno.access.verification.Verification;
+import com.dulno.access.verification.VerificationLoginController;
+import com.dulno.core.access.DulnoRestController;
+import com.dulno.core.organization.team.TeamTargetDatabaseTable;
+import com.dulno.core.user.*;
+import com.dulno.google.GoogleAccountLink;
+import com.dulno.google.GoogleAccountLinkRepository;
+import com.dulno.google.account.GoogleAccount;
+import com.dulno.google.account.GoogleAccountDatabaseTable;
+import com.dulno.google.account.GoogleCredential;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,7 +27,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
-public class GoogleAccountController extends TaskwolfRestController {
+public class GoogleAccountController extends DulnoRestController {
   private final Key homeKey;
   private final Key refreshKey;
   private final String clientId;
@@ -60,8 +60,8 @@ public class GoogleAccountController extends TaskwolfRestController {
     HttpServletRequest request, @RequestParam("state") String state,
     @RequestParam("code") String code, HttpServletResponse response
   ) throws Exception {
-    response.sendRedirect("https://taskwolf.net/close/");
-    var split = state.split("TASKWOLF-STATE-SPLIT");
+    response.sendRedirect("https://dulno.com/close/");
+    var split = state.split("DULNO-STATE-SPLIT");
     var apiKey = split[0];
     if (!isValidApiKey(apiKey)) {
       return;
@@ -82,7 +82,7 @@ public class GoogleAccountController extends TaskwolfRestController {
   }
 
   private static final String ACCOUNT_ADD_REDIRECT_URI =
-    "https://api.taskwolf.net/v1/google/account/add/";
+    "https://api.dulno.com/v1/google/account/add/";
 
   private void finishAccountAdding(UUID userId, GoogleAccountLink link, String code) {
     var account = fetchGoogleAccount(code, ACCOUNT_ADD_REDIRECT_URI);
@@ -116,7 +116,7 @@ public class GoogleAccountController extends TaskwolfRestController {
   }
 
   private static final String GOOGLE_LOGIN_REDIRECT_URI =
-    "https://api.taskwolf.net/v1/google/login/";
+    "https://api.dulno.com/v1/google/login/";
 
   @RequestMapping(path = "/google/login/", method = RequestMethod.GET)
   public CompletableFuture<Void> googleLogin(
@@ -143,7 +143,7 @@ public class GoogleAccountController extends TaskwolfRestController {
   ) {
     try {
       if (!userExists) {
-        response.sendRedirect("https://taskwolf.net/register/");
+        response.sendRedirect("https://dulno.com/register/");
         return CompletableFuture.completedFuture(null);
       }
       var verification = Verification.create(userDatabaseTable(), homeKey,
@@ -159,9 +159,9 @@ public class GoogleAccountController extends TaskwolfRestController {
   }
 
   private static final String PRODUCT_TOKEN_COOKIE_FORMAT =
-    "token=%s; Domain=.taskwolf.net; Path=/; Expires=%s; Secure";
+    "token=%s; Domain=.dulno.com; Path=/; Expires=%s; Secure";
   private static final String REFRESH_TOKEN_COOKIE_FORMAT =
-    "refresh-token=%s; Domain=.taskwolf.net; Path=/; Expires=%s; Secure";
+    "refresh-token=%s; Domain=.dulno.com; Path=/; Expires=%s; Secure";
 
   private void finishGoogleLogin(
     Map<String, Object> loginResult, HttpServletResponse response
@@ -176,7 +176,7 @@ public class GoogleAccountController extends TaskwolfRestController {
         loginResult.get("productApiKey"), date));
       response.addHeader("Set-Cookie", String.format(REFRESH_TOKEN_COOKIE_FORMAT,
         loginResult.get("refreshToken"), date));
-      response.sendRedirect("https://taskwolf.net/dashboard/");
+      response.sendRedirect("https://dulno.com/dashboard/");
     } catch (Exception exception) {
       exception.printStackTrace();
     }
@@ -187,9 +187,9 @@ public class GoogleAccountController extends TaskwolfRestController {
   ) throws Exception {
     var errorCode = (int) loginResult.get("error");
     if (errorCode == 1001 || errorCode == 1003) {
-      response.sendRedirect("https://taskwolf.net/login/");
+      response.sendRedirect("https://dulno.com/login/");
     } else if (errorCode == 1002) {
-      response.sendRedirect("https://taskwolf.net/pricing/");
+      response.sendRedirect("https://dulno.com/pricing/");
     }
   }
 
@@ -226,7 +226,7 @@ public class GoogleAccountController extends TaskwolfRestController {
       var serviceBuilder = new PeopleService.Builder(
         GoogleNetHttpTransport.newTrustedTransport(),
         GsonFactory.getDefaultInstance(), credential);
-      var service = serviceBuilder.setApplicationName("Taskwolf").build();
+      var service = serviceBuilder.setApplicationName("Dulno").build();
       return service.people().get("people/me")
         .setPersonFields("names,emailAddresses")
         .execute();

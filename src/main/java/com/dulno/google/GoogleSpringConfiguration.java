@@ -1,4 +1,4 @@
-package net.taskwolf.google;
+package com.dulno.google;
 
 import jakarta.annotation.PostConstruct;
 import org.springframework.context.annotation.Bean;

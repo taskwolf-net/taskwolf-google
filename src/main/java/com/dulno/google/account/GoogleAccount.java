@@ -1,9 +1,9 @@
-package net.taskwolf.google.account;
+package com.dulno.google.account;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.taskwolf.core.database.DatabaseRow;
+import com.dulno.core.database.DatabaseRow;
 
 @Getter
 @Accessors(fluent = true)

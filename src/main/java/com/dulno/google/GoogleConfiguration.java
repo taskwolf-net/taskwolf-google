@@ -1,8 +1,8 @@
-package net.taskwolf.google;
+package com.dulno.google;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
-import net.taskwolf.core.configuration.Configuration;
+import com.dulno.core.configuration.Configuration;
 import org.json.JSONObject;
 
 @Getter

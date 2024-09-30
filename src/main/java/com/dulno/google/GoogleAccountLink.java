@@ -1,5 +1,6 @@
 package com.dulno.google;
 
+import com.dulno.core.account.AccountLinkEntry;
 import com.google.api.client.googleapis.auth.oauth2.GoogleRefreshTokenRequest;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
@@ -55,21 +56,20 @@ public class GoogleAccountLink implements AccountLink {
   }
 
   @Override
-  public CompletableFuture<List<String>> findAccounts(UUID id) {
-    var futureResponse = new CompletableFuture<List<String>>();
+  public CompletableFuture<List<AccountLinkEntry>> findAccounts(UUID id) {
+    var futureResponse = new CompletableFuture<List<AccountLinkEntry>>();
     googleUserAccountDatabaseTable.findAccounts(id).thenApply(accountIds ->
       AsyncIterator.execute(accountIds, googleAccountDatabaseTable::findAccount)
         .thenAccept(accounts -> futureResponse.complete(completeAccountFinding(accounts))));
     return futureResponse;
   }
 
-  private List<String> completeAccountFinding(
+  private List<AccountLinkEntry> completeAccountFinding(
     List<GoogleAccount> accounts
   ) {
     checkAccountsTokenRefresh(accounts);
-    return accounts.stream().map(account -> new JSONObject(Map.of("identifier",
-      account.id(), "name", account.displayName() + " | " +
-        account.emailAddress())).toString()).toList();
+    return accounts.stream().map(account -> AccountLinkEntry.create(account.id(),
+      account.displayName() + " | " + account.emailAddress())).toList();
   }
 
   private void checkAccountsTokenRefresh(UUID id) {

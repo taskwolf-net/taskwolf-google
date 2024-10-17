@@ -1,5 +1,7 @@
 package com.dulno.google.access;
 
+import com.dulno.access.trial.TrialController;
+import com.dulno.access.verification.VerificationRegistrationController;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
 import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
@@ -34,6 +36,8 @@ public class GoogleAccountController extends DulnoRestController {
   private final String clientSecret;
   private final GoogleAccountLinkRepository googleAccountLinkRepository;
   private final VerificationLoginController verificationLoginController;
+  private final VerificationRegistrationController verificationRegistrationController;
+  private final TrialController trialController;
   private final TeamTargetDatabaseTable teamTargetDatabaseTable;
 
   private GoogleAccountController(
@@ -43,6 +47,8 @@ public class GoogleAccountController extends DulnoRestController {
     @Qualifier("clientSecret") String clientSecret,
     GoogleAccountLinkRepository googleAccountLinkRepository,
     VerificationLoginController verificationLoginController,
+    VerificationRegistrationController verificationRegistrationController,
+    TrialController trialController,
     TeamTargetDatabaseTable teamTargetDatabaseTable
   ) {
     super(productKey, userDatabaseTable);
@@ -52,6 +58,8 @@ public class GoogleAccountController extends DulnoRestController {
     this.clientSecret = clientSecret;
     this.googleAccountLinkRepository = googleAccountLinkRepository;
     this.verificationLoginController = verificationLoginController;
+    this.verificationRegistrationController = verificationRegistrationController;
+    this.trialController = trialController;
     this.teamTargetDatabaseTable = teamTargetDatabaseTable;
   }
 
@@ -141,21 +149,26 @@ public class GoogleAccountController extends DulnoRestController {
     GoogleAccount account, HttpServletRequest request,
     HttpServletResponse response, boolean userExists
   ) {
-    try {
-      if (!userExists) {
-        response.sendRedirect("https://dulno.com/register/");
-        return CompletableFuture.completedFuture(null);
-      }
-      var verification = Verification.create(userDatabaseTable(), homeKey,
-        secretKey(), refreshKey, account.emailAddress(), "");
-      var futureResponse = new CompletableFuture<Map<String, Object>>();
-      verificationLoginController.processAuthorizedLogin(request, verification,
-        futureResponse);
-      return futureResponse.thenAccept(result -> finishGoogleLogin(result, response));
-    } catch (Exception exception) {
-      exception.printStackTrace();
-      return CompletableFuture.completedFuture(null);
+    if (!userExists) {
+      return verificationRegistrationController.createUser(account.displayName(),
+          account.emailAddress(), "", "/dashboard/",
+          request.getHeader("X-Real-IP"), true, true, false)
+        .thenCompose(user -> trialController.useTrial(request, user))
+        .thenCompose(value -> requestGoogleLogin(account, request, response));
     }
+    return requestGoogleLogin(account, request, response);
+  }
+
+  private CompletableFuture<Void> requestGoogleLogin(
+    GoogleAccount account, HttpServletRequest request,
+    HttpServletResponse response
+  ) {
+    var verification = Verification.create(userDatabaseTable(), homeKey,
+      secretKey(), refreshKey, account.emailAddress(), "");
+    var futureResponse = new CompletableFuture<Map<String, Object>>();
+    verificationLoginController.processAuthorizedLogin(request, verification,
+      futureResponse);
+    return futureResponse.thenAccept(result -> finishGoogleLogin(result, response));
   }
 
   private static final String PRODUCT_TOKEN_COOKIE_FORMAT =
@@ -186,11 +199,43 @@ public class GoogleAccountController extends DulnoRestController {
     Map<String, Object> loginResult, HttpServletResponse response
   ) throws Exception {
     var errorCode = (int) loginResult.get("error");
-    if (errorCode == 1001 || errorCode == 1003) {
+    if (errorCode == 1001) {
       response.sendRedirect("https://dulno.com/login/");
-    } else if (errorCode == 1002) {
-      response.sendRedirect("https://dulno.com/pricing/");
+    } else if (errorCode == 1003) {
+      prepareExpirationCookies(loginResult, response);
+      response.sendRedirect("https://dulno.com/expiration/");
     }
+  }
+
+  private static final String HOME_TOKEN_COOKIE_FORMAT =
+    "home-token=%s; Domain=.dulno.com; Path=/; Expires=%s; Secure";
+  private static final String EXPIRATION_HAS_PERSONAL_PACKAGE_COOKIE_FORMAT =
+    "expiration-has-personal-package=%s; Domain=.dulno.com; Path=/; Expires=%s; Secure";
+  private static final String EXPIRATION_HAS_OWN_ORGANIZATION_COOKIE_FORMAT =
+    "expiration-has-own-organization=%s; Domain=.dulno.com; Path=/; Expires=%s; Secure";
+  private static final String EXPIRATION_IS_ORGANIZATION_MEMBER_COOKIE_FORMAT =
+    "expiration-is-organization-member=%s; Domain=.dulno.com; Path=/; Expires=%s; Secure";
+  private static final String EXPIRATION_USER_NAME_COOKIE_FORMAT =
+    "expiration-user-name=%s; Domain=.dulno.com; Path=/; Expires=%s; Secure";
+
+  private void prepareExpirationCookies(
+    Map<String, Object> loginResult, HttpServletResponse response
+  ) {
+    var date = new Date(System.currentTimeMillis() + 1000L * 60 * 60).toString();
+    response.addHeader("Set-Cookie", String.format(HOME_TOKEN_COOKIE_FORMAT,
+      loginResult.get("homeApiKey"), date));
+    response.addHeader("Set-Cookie",
+      String.format(EXPIRATION_HAS_PERSONAL_PACKAGE_COOKIE_FORMAT,
+        loginResult.get("hasPersonalBundle"), date));
+    response.addHeader("Set-Cookie",
+      String.format(EXPIRATION_HAS_OWN_ORGANIZATION_COOKIE_FORMAT,
+        loginResult.get("hasOwnOrganization"), date));
+    response.addHeader("Set-Cookie",
+      String.format(EXPIRATION_IS_ORGANIZATION_MEMBER_COOKIE_FORMAT,
+        loginResult.get("isOrganizationMember"), date));
+    response.addHeader("Set-Cookie",
+      String.format(EXPIRATION_USER_NAME_COOKIE_FORMAT,
+        loginResult.get("userName"), date));
   }
 
   private GoogleAccount fetchGoogleAccount(String code, String redirectUri) {

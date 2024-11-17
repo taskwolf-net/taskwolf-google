@@ -94,8 +94,7 @@ public class GoogleAccountLink implements AccountLink {
       account.updateVerification(response.getAccessToken(), System.currentTimeMillis() +
         (response.getExpiresInSeconds() * 1000));
       googleAccountDatabaseTable.updateAccount(account);
-    } catch (Exception exception) {
-      exception.printStackTrace();
+    } catch (Exception ignored) {
     }
   }
 

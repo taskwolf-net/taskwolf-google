@@ -39,7 +39,6 @@ public class GoogleCredential {
       credential.setExpiresInSeconds(expirationTime);
       return credential;
     } catch (Exception exception) {
-      exception.printStackTrace();
       return null;
     }
   }

@@ -2,6 +2,7 @@ package com.dulno.google.access;
 
 import com.dulno.access.trial.TrialController;
 import com.dulno.access.verification.VerificationRegistrationController;
+import com.dulno.core.error.ErrorRepository;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
 import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
@@ -39,6 +40,7 @@ public class GoogleAccountController extends DulnoRestController {
   private final VerificationRegistrationController verificationRegistrationController;
   private final TrialController trialController;
   private final TeamTargetDatabaseTable teamTargetDatabaseTable;
+  private final ErrorRepository errorRepository;
 
   private GoogleAccountController(
     @Qualifier("homeKey") Key homeKey, @Qualifier("productKey") Key productKey,
@@ -49,7 +51,8 @@ public class GoogleAccountController extends DulnoRestController {
     VerificationLoginController verificationLoginController,
     VerificationRegistrationController verificationRegistrationController,
     TrialController trialController,
-    TeamTargetDatabaseTable teamTargetDatabaseTable
+    TeamTargetDatabaseTable teamTargetDatabaseTable,
+    ErrorRepository errorRepository
   ) {
     super(productKey, userDatabaseTable);
     this.homeKey = homeKey;
@@ -61,6 +64,7 @@ public class GoogleAccountController extends DulnoRestController {
     this.verificationRegistrationController = verificationRegistrationController;
     this.trialController = trialController;
     this.teamTargetDatabaseTable = teamTargetDatabaseTable;
+    this.errorRepository = errorRepository;
   }
 
   @RequestMapping(path = "/google/account/add/", method = RequestMethod.GET)
@@ -109,7 +113,7 @@ public class GoogleAccountController extends DulnoRestController {
     try {
       link.registerAccount(userId, accountId);
     } catch (Exception exception) {
-      exception.printStackTrace();
+      errorRepository.processError(exception);
     }
   }
 
@@ -191,7 +195,7 @@ public class GoogleAccountController extends DulnoRestController {
         loginResult.get("refreshToken"), date));
       response.sendRedirect("https://dulno.com/dashboard/");
     } catch (Exception exception) {
-      exception.printStackTrace();
+      errorRepository.processError(exception);
     }
   }
 
@@ -257,7 +261,7 @@ public class GoogleAccountController extends DulnoRestController {
         GoogleNetHttpTransport.newTrustedTransport(), GsonFactory.getDefaultInstance(),
         clientId, clientSecret, URLDecoder.decode(code, "UTF-8"), redirectUri).execute();
     } catch (Exception exception) {
-      exception.printStackTrace();
+      errorRepository.processError(exception);
       return null;
     }
   }
@@ -276,7 +280,7 @@ public class GoogleAccountController extends DulnoRestController {
         .setPersonFields("names,emailAddresses")
         .execute();
     } catch (Exception exception) {
-      exception.printStackTrace();
+      errorRepository.processError(exception);
       return null;
     }
   }

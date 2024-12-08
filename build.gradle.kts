@@ -78,7 +78,7 @@ dependencies {
 
   compileOnly("org.springframework.boot:spring-boot-starter-web:3.2.5")
 
-  compileOnly("io.jsonwebtoken:jjwt:0.12.5")
+  compileOnly("io.jsonwebtoken:jjwt:0.12.6")
 
   implementation("com.google.api-client:google-api-client:2.4.1")
   implementation("com.google.oauth-client:google-oauth-client-jetty:1.35.0")

@@ -132,56 +132,61 @@ public class GoogleAccountController extends DulnoRestController {
 
   @RequestMapping(path = "/google/login/", method = RequestMethod.GET)
   public CompletableFuture<Void> googleLogin(
-    HttpServletRequest request, @RequestParam("code") String code,
-    HttpServletResponse response
+    HttpServletRequest request, @RequestParam("state") String state,
+    @RequestParam("code") String code, HttpServletResponse response
   ) {
     var futureResponse = new CompletableFuture<Void>();
     new Thread(() -> googleLogin(fetchGoogleAccount(code, GOOGLE_LOGIN_REDIRECT_URI),
-      request, response).thenAccept(futureResponse::complete)).start();
+      request, response, state).thenAccept(futureResponse::complete)).start();
     return futureResponse;
   }
 
   private CompletableFuture<Void> googleLogin(
     GoogleAccount account, HttpServletRequest request,
-    HttpServletResponse response
+    HttpServletResponse response, String redirect
   ) {
-    return userDatabaseTable().userExists(account.emailAddress())
-      .thenCompose(exists -> googleLogin(account, request, response, exists));
+    return userDatabaseTable().userExists(account.emailAddress()).thenCompose(
+      exists -> googleLogin(account, request, response, redirect, exists));
   }
 
   private CompletableFuture<Void> googleLogin(
     GoogleAccount account, HttpServletRequest request,
-    HttpServletResponse response, boolean userExists
+    HttpServletResponse response, String redirect, boolean userExists
   ) {
     if (!userExists) {
       return verificationRegistrationController.createUser(account.displayName(),
           account.emailAddress(), "", "/dashboard/",
           request.getHeader("X-Real-IP"), true, true, false)
         .thenCompose(user -> trialController.useTrial(request, user))
-        .thenCompose(value -> requestGoogleLogin(account, request, response));
+        .thenCompose(value -> requestGoogleLogin(account, request, response,
+          redirect));
     }
-    return requestGoogleLogin(account, request, response);
+    return requestGoogleLogin(account, request, response, redirect);
   }
 
   private CompletableFuture<Void> requestGoogleLogin(
     GoogleAccount account, HttpServletRequest request,
-    HttpServletResponse response
+    HttpServletResponse response, String redirect
   ) {
     var verification = Verification.create(userDatabaseTable(), homeKey,
       secretKey(), refreshKey, account.emailAddress(), "");
     var futureResponse = new CompletableFuture<Map<String, Object>>();
     verificationLoginController.processAuthorizedLogin(request, verification,
       futureResponse);
-    return futureResponse.thenAccept(result -> finishGoogleLogin(result, response));
+    return futureResponse.thenAccept(result -> finishGoogleLogin(result,
+      response, redirect));
   }
 
   private static final String PRODUCT_TOKEN_COOKIE_FORMAT =
     "token=%s; Domain=.dulno.com; Path=/; Expires=%s; Secure";
   private static final String REFRESH_TOKEN_COOKIE_FORMAT =
     "refresh-token=%s; Domain=.dulno.com; Path=/; Expires=%s; Secure";
+  private static final String HOME_TOKEN_COOKIE_FORMAT =
+    "home-token=%s; Domain=.dulno.com; Path=/; Expires=%s; Secure";
 
   private void finishGoogleLogin(
-    Map<String, Object> loginResult, HttpServletResponse response
+    Map<String, Object> loginResult, HttpServletResponse response,
+    String redirect
   ) {
     try {
       if (!((boolean) loginResult.get("success"))) {
@@ -193,7 +198,9 @@ public class GoogleAccountController extends DulnoRestController {
         loginResult.get("productApiKey"), date));
       response.addHeader("Set-Cookie", String.format(REFRESH_TOKEN_COOKIE_FORMAT,
         loginResult.get("refreshToken"), date));
-      response.sendRedirect("https://dulno.com/dashboard/");
+      response.addHeader("Set-Cookie", String.format(HOME_TOKEN_COOKIE_FORMAT,
+        loginResult.get("homeApiKey"), date));
+      response.sendRedirect("https://dulno.com" + redirect);
     } catch (Exception exception) {
       errorRepository.processError(exception);
     }
@@ -211,8 +218,6 @@ public class GoogleAccountController extends DulnoRestController {
     }
   }
 
-  private static final String HOME_TOKEN_COOKIE_FORMAT =
-    "home-token=%s; Domain=.dulno.com; Path=/; Expires=%s; Secure";
   private static final String EXPIRATION_HAS_PERSONAL_PACKAGE_COOKIE_FORMAT =
     "expiration-has-personal-package=%s; Domain=.dulno.com; Path=/; Expires=%s; Secure";
   private static final String EXPIRATION_HAS_OWN_ORGANIZATION_COOKIE_FORMAT =

@@ -1,6 +1,5 @@
 package com.dulno.google;
 
-import com.dulno.workflow.WorkflowInjectionModule;
 import com.google.inject.Injector;
 import com.dulno.core.log.Log;
 import com.dulno.core.module.Module;
@@ -10,12 +9,12 @@ import com.dulno.core.module.ModuleLoadPriority;
 import org.springframework.boot.SpringApplication;
 
 @ModuleDescription(name = "google", version = "1.0.0-SNAPSHOT",
-  priority = ModuleLoadPriority.NEUTRAL)
+  priority = ModuleLoadPriority.HIGH)
 public final class GoogleModule extends Module {
   private Log log;
 
   public GoogleModule(Injector injector) {
-    super(injector.createChildInjector(WorkflowInjectionModule.create()));
+    super(injector);
   }
 
   @Override

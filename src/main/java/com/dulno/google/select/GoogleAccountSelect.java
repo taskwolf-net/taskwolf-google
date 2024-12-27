@@ -3,8 +3,8 @@ package com.dulno.google.select;
 import lombok.RequiredArgsConstructor;
 import com.dulno.core.iterator.AsyncIterator;
 import com.dulno.core.user.User;
-import com.dulno.core.workflow.component.input.InputComponentSelect;
-import com.dulno.core.workflow.component.input.InputComponentSelectEntry;
+import com.dulno.workflow.component.input.InputComponentSelect;
+import com.dulno.workflow.component.input.InputComponentSelectEntry;
 import com.dulno.google.account.GoogleAccountDatabaseTable;
 import com.dulno.google.account.GoogleUserAccountDatabaseTable;
 

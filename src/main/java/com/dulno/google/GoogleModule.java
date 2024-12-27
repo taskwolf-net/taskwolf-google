@@ -1,5 +1,6 @@
 package com.dulno.google;
 
+import com.dulno.workflow.WorkflowInjectionModule;
 import com.google.inject.Injector;
 import com.dulno.core.log.Log;
 import com.dulno.core.module.Module;
@@ -14,7 +15,7 @@ public final class GoogleModule extends Module {
   private Log log;
 
   public GoogleModule(Injector injector) {
-    super(injector);
+    super(injector.createChildInjector(WorkflowInjectionModule.create()));
   }
 
   @Override

@@ -5,7 +5,7 @@ stages:
 
 variables:
   DOCKER_IMAGE: "dulno-core-google"
-  DOCKER_DOCS_IMAGE: "dulno-core-google-docs"
+  DOCKER_DOCS_IMAGE: "dulno-core-google-documentation"
 
 build:
   stage: build

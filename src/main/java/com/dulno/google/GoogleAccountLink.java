@@ -58,7 +58,7 @@ public class GoogleAccountLink implements AccountLink {
   @Override
   public CompletableFuture<List<AccountLinkEntry>> findAccounts(UUID id) {
     var futureResponse = new CompletableFuture<List<AccountLinkEntry>>();
-    googleUserAccountDatabaseTable.findAccounts(id).thenApply(accountIds ->
+    googleUserAccountDatabaseTable.findAccountsIfExists(id).thenApply(accountIds ->
       AsyncIterator.execute(accountIds, googleAccountDatabaseTable::findAccount)
         .thenAccept(accounts -> futureResponse.complete(completeAccountFinding(accounts))));
     return futureResponse;
@@ -73,7 +73,7 @@ public class GoogleAccountLink implements AccountLink {
   }
 
   private void checkAccountsTokenRefresh(UUID id) {
-    googleUserAccountDatabaseTable.findAccounts(id).thenApply(accountIds ->
+    googleUserAccountDatabaseTable.findAccountsIfExists(id).thenApply(accountIds ->
       AsyncIterator.execute(accountIds, googleAccountDatabaseTable::findAccount)
         .thenAccept(this::checkAccountsTokenRefresh));
   }

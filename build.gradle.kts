@@ -1,7 +1,7 @@
 plugins {
   id("java")
   id("maven-publish")
-  id("io.freefair.lombok") version "8.11"
+  id("io.freefair.lombok") version "8.12.1"
 }
 
 group = "com.dulno"
@@ -86,14 +86,14 @@ dependencies {
 
   compileOnly("com.datastax.oss:java-driver-core:4.17.0")
 
-  compileOnly("org.json:json:20240303")
+  compileOnly("org.json:json:20250107")
   compileOnly("commons-io:commons-io:2.18.0")
 
-  compileOnly("org.springframework.boot:spring-boot-starter-web:3.4.1")
+  compileOnly("org.springframework.boot:spring-boot-starter-web:3.4.2")
 
   compileOnly("io.jsonwebtoken:jjwt:0.12.6")
 
-  implementation("com.google.api-client:google-api-client:2.7.1")
+  implementation("com.google.api-client:google-api-client:2.7.2")
   implementation("com.google.oauth-client:google-oauth-client-jetty:1.37.0")
   implementation("com.google.apis:google-api-services-people:v1-rev20240313-2.0.0")
 }

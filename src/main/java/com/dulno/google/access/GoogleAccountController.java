@@ -3,6 +3,7 @@ package com.dulno.google.access;
 import com.dulno.access.trial.TrialController;
 import com.dulno.access.verification.VerificationRegistrationController;
 import com.dulno.core.error.ErrorRepository;
+import com.dulno.core.hashing.Hashing;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
 import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
@@ -41,6 +42,7 @@ public class GoogleAccountController extends DulnoRestController {
   private final TrialController trialController;
   private final TeamTargetDatabaseTable teamTargetDatabaseTable;
   private final ErrorRepository errorRepository;
+  private final Hashing hashing;
 
   private GoogleAccountController(
     @Qualifier("homeKey") Key homeKey, @Qualifier("productKey") Key productKey,
@@ -52,7 +54,7 @@ public class GoogleAccountController extends DulnoRestController {
     VerificationRegistrationController verificationRegistrationController,
     TrialController trialController,
     TeamTargetDatabaseTable teamTargetDatabaseTable,
-    ErrorRepository errorRepository
+    ErrorRepository errorRepository, Hashing hashing
   ) {
     super(productKey, userDatabaseTable);
     this.homeKey = homeKey;
@@ -65,6 +67,7 @@ public class GoogleAccountController extends DulnoRestController {
     this.trialController = trialController;
     this.teamTargetDatabaseTable = teamTargetDatabaseTable;
     this.errorRepository = errorRepository;
+    this.hashing = hashing;
   }
 
   @RequestMapping(path = "/google/account/add/", method = RequestMethod.GET)
@@ -169,7 +172,7 @@ public class GoogleAccountController extends DulnoRestController {
     HttpServletResponse response, String redirect
   ) {
     var verification = Verification.create(userDatabaseTable(), homeKey,
-      secretKey(), refreshKey, account.emailAddress(), "");
+      secretKey(), refreshKey, hashing, account.emailAddress(), "");
     var futureResponse = new CompletableFuture<Map<String, Object>>();
     verificationLoginController.processAuthorizedLogin(request, verification,
       futureResponse);

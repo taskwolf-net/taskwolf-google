@@ -1,6 +1,7 @@
 package com.dulno.google;
 
 import com.dulno.core.account.AccountLinkEntry;
+import com.dulno.core.environment.DulnoEnvironment;
 import com.google.api.client.googleapis.auth.oauth2.GoogleRefreshTokenRequest;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
@@ -11,10 +12,8 @@ import com.dulno.core.iterator.AsyncIterator;
 import com.dulno.google.account.GoogleAccount;
 import com.dulno.google.account.GoogleAccountDatabaseTable;
 import com.dulno.google.account.GoogleUserAccountDatabaseTable;
-import org.json.JSONObject;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -27,6 +26,8 @@ public class GoogleAccountLink implements AccountLink {
   @Getter
   protected final GoogleUserAccountDatabaseTable googleUserAccountDatabaseTable;
   @Getter
+  protected final DulnoEnvironment environment;
+  @Getter
   private final String module;
   private final List<String> scopes;
 
@@ -34,11 +35,12 @@ public class GoogleAccountLink implements AccountLink {
     GoogleConfiguration googleConfiguration,
     GoogleAccountDatabaseTable googleAccountDatabaseTable,
     GoogleUserAccountDatabaseTable googleUserAccountDatabaseTable,
-    String module, List<String> scopes
+    DulnoEnvironment environment, String module, List<String> scopes
   ) {
     this.googleConfiguration = googleConfiguration;
     this.googleAccountDatabaseTable = googleAccountDatabaseTable;
     this.googleUserAccountDatabaseTable = googleUserAccountDatabaseTable;
+    this.environment = environment;
     this.module = module;
     this.scopes = scopes;
     this.scopes.add("https://www.googleapis.com/auth/userinfo.email");
@@ -111,13 +113,14 @@ public class GoogleAccountLink implements AccountLink {
     googleUserAccountDatabaseTable.removeAccount(id, identifier);
   }
 
-  private static final String GOOGLE_REGISTRATION_URL = "https://accounts.google.com/o/oauth2/auth?access_type=offline&prompt=consent&client_id=GOOGLE_CLIENT_ID&redirect_uri=https://api.dulno.com/v1/google/account/add/&state=DULNO-STATE&response_type=code&scope=";
+  private static final String GOOGLE_REGISTRATION_URL = "https://accounts.google.com/o/oauth2/auth?access_type=offline&prompt=consent&client_id=GOOGLE_CLIENT_ID&redirect_uri=https://DOMAIN/v1/google/account/add/&state=DULNO-STATE&response_type=code&scope=";
 
   @Override
   public String registrationUrl(UUID id, String apiKey) {
     return GOOGLE_REGISTRATION_URL.replace("DULNO-STATE", apiKey +
         "DULNO-STATE-SPLIT" + id.toString() + "DULNO-STATE-SPLIT" + module)
-      .replace("GOOGLE_CLIENT_ID", googleConfiguration.clientId()) +
+      .replace("GOOGLE_CLIENT_ID", googleConfiguration.clientId())
+      .replace("DOMAIN", environment.publicEndpoint()) +
       String.join(" ", scopes);
   }
 

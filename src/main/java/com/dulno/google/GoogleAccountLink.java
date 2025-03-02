@@ -113,14 +113,14 @@ public class GoogleAccountLink implements AccountLink {
     googleUserAccountDatabaseTable.removeAccount(id, identifier);
   }
 
-  private static final String GOOGLE_REGISTRATION_URL = "https://accounts.google.com/o/oauth2/auth?access_type=offline&prompt=consent&client_id=GOOGLE_CLIENT_ID&redirect_uri=https://api.DOMAIN/v1/google/account/add/&state=DULNO-STATE&response_type=code&scope=";
+  private static final String GOOGLE_REGISTRATION_URL = "https://accounts.google.com/o/oauth2/auth?access_type=offline&prompt=consent&client_id=GOOGLE_CLIENT_ID&redirect_uri=https://DOMAIN/v1/google/account/add/&state=DULNO-STATE&response_type=code&scope=";
 
   @Override
   public String registrationUrl(UUID id, String apiKey) {
     return GOOGLE_REGISTRATION_URL.replace("DULNO-STATE", apiKey +
         "DULNO-STATE-SPLIT" + id.toString() + "DULNO-STATE-SPLIT" + module)
       .replace("GOOGLE_CLIENT_ID", googleConfiguration.clientId())
-      .replace("DOMAIN", environment.domain()) +
+      .replace("DOMAIN", environment.publicEndpoint()) +
       String.join(" ", scopes);
   }
 

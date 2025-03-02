@@ -100,11 +100,11 @@ public class GoogleAccountController extends DulnoRestController {
   }
 
   private static final String ACCOUNT_ADD_REDIRECT_URI =
-    "https://api.%s/v1/google/account/add/";
+    "https://%s/v1/google/account/add/";
 
   private void finishAccountAdding(UUID userId, GoogleAccountLink link, String code) {
     var account = fetchGoogleAccount(code, String.format(ACCOUNT_ADD_REDIRECT_URI,
-      environment.domain()));
+      environment.publicEndpoint()));
     var accountId = account.id();
     var accountDatabaseTable = link.googleAccountDatabaseTable();
     var userAccountDatabaseTable = link.googleUserAccountDatabaseTable();
@@ -135,7 +135,7 @@ public class GoogleAccountController extends DulnoRestController {
   }
 
   private static final String GOOGLE_LOGIN_REDIRECT_URI =
-    "https://api.%s/v1/google/login/";
+    "https://%s/v1/google/login/";
 
   @RequestMapping(path = "/google/login/", method = RequestMethod.GET)
   public CompletableFuture<Void> googleLogin(
@@ -144,7 +144,7 @@ public class GoogleAccountController extends DulnoRestController {
   ) {
     var futureResponse = new CompletableFuture<Void>();
     new Thread(() -> googleLogin(fetchGoogleAccount(code,
-        String.format(GOOGLE_LOGIN_REDIRECT_URI, environment.domain())),
+        String.format(GOOGLE_LOGIN_REDIRECT_URI, environment.publicEndpoint())),
       request, response, state).thenAccept(futureResponse::complete)).start();
     return futureResponse;
   }

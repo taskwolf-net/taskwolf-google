@@ -143,28 +143,32 @@ public class GoogleAccountController extends DulnoRestController {
     @RequestParam("code") String code, HttpServletResponse response
   ) {
     var futureResponse = new CompletableFuture<Void>();
-    new Thread(() -> googleLogin(fetchGoogleAccount(code,
-        String.format(GOOGLE_LOGIN_REDIRECT_URI, environment.publicEndpoint())),
-      request, response, state).thenAccept(futureResponse::complete)).start();
+    var split = state.split("DULNO-STATE-SPLIT");
+    var redirect = split[0];
+    var language = split[1];
+    new Thread(() -> googleLogin(
+      fetchGoogleAccount(code, String.format(GOOGLE_LOGIN_REDIRECT_URI,
+        environment.publicEndpoint())), request, response, redirect, language)
+      .thenAccept(futureResponse::complete)).start();
     return futureResponse;
   }
 
   private CompletableFuture<Void> googleLogin(
     GoogleAccount account, HttpServletRequest request,
-    HttpServletResponse response, String redirect
+    HttpServletResponse response, String redirect, String language
   ) {
     return userDatabaseTable().userExists(account.emailAddress()).thenCompose(
-      exists -> googleLogin(account, request, response, redirect, exists));
+      exists -> googleLogin(account, request, response, redirect, language, exists));
   }
 
   private CompletableFuture<Void> googleLogin(
     GoogleAccount account, HttpServletRequest request,
-    HttpServletResponse response, String redirect, boolean userExists
+    HttpServletResponse response, String redirect, String language,
+    boolean userExists
   ) {
     if (!userExists) {
       return verificationRegistrationController.createUser(account.displayName(),
-          account.emailAddress(), "", "/dashboard/",
-          request.getHeader("X-Real-IP"), true, true, false)
+          account.emailAddress(), "", language, "/dashboard/", true, true, false)
         .thenCompose(user -> trialController.useTrial(request, user))
         .thenCompose(value -> requestGoogleLogin(account, request, response,
           redirect));

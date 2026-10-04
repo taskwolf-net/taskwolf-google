@@ -1,4 +1,4 @@
-package com.dulno.google;
+package net.taskwolf.google;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;

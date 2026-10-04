@@ -3,7 +3,7 @@ plugins {
   id("io.freefair.lombok") version "8.13"
 }
 
-group = "com.dulno"
+group = "net.taskwolf"
 version = "1.0.0-SNAPSHOT"
 java.sourceCompatibility = JavaVersion.VERSION_21
 java.targetCompatibility = JavaVersion.VERSION_21
@@ -17,9 +17,9 @@ dependencies {
   testCompileOnly(platform("org.junit:junit-bom:5.12.0"))
   testCompileOnly("org.junit.jupiter:junit-jupiter:5.12.0")
 
-  compileOnly("com.dulno:core:1.0.0-SNAPSHOT")
-  compileOnly("com.dulno:workflow:1.0.0-SNAPSHOT")
-  compileOnly("com.dulno:access:1.0.0-SNAPSHOT")
+  compileOnly("net.taskwolf:core:1.0.0-SNAPSHOT")
+  compileOnly("net.taskwolf:workflow:1.0.0-SNAPSHOT")
+  compileOnly("net.taskwolf:access:1.0.0-SNAPSHOT")
 
   compileOnly("com.google.inject:guice:7.0.0")
 

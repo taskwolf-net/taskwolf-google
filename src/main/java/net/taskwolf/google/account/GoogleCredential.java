@@ -1,4 +1,4 @@
-package com.dulno.google.account;
+package net.taskwolf.google.account;
 
 import com.google.api.client.auth.oauth2.BearerToken;
 import com.google.api.client.auth.oauth2.ClientParametersAuthentication;

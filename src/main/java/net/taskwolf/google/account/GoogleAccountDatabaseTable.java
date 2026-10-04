@@ -1,7 +1,7 @@
-package com.dulno.google.account;
+package net.taskwolf.google.account;
 
 import com.google.common.collect.Lists;
-import com.dulno.core.database.*;
+import net.taskwolf.core.database.*;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;

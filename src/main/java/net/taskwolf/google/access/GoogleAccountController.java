@@ -1,10 +1,10 @@
-package com.dulno.google.access;
+package net.taskwolf.google.access;
 
-import com.dulno.access.trial.TrialController;
-import com.dulno.access.verification.VerificationRegistrationController;
-import com.dulno.core.environment.DulnoEnvironment;
-import com.dulno.core.error.ErrorRepository;
-import com.dulno.core.hashing.Hashing;
+import net.taskwolf.access.trial.TrialController;
+import net.taskwolf.access.verification.VerificationRegistrationController;
+import net.taskwolf.core.environment.TaskwolfEnvironment;
+import net.taskwolf.core.error.ErrorRepository;
+import net.taskwolf.core.hashing.Hashing;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
 import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
@@ -13,16 +13,16 @@ import com.google.api.services.people.v1.PeopleService;
 import com.google.api.services.people.v1.model.Person;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import com.dulno.access.verification.Verification;
-import com.dulno.access.verification.VerificationLoginController;
-import com.dulno.core.access.DulnoRestController;
-import com.dulno.core.organization.team.TeamTargetDatabaseTable;
-import com.dulno.core.user.*;
-import com.dulno.google.GoogleAccountLink;
-import com.dulno.google.GoogleAccountLinkRepository;
-import com.dulno.google.account.GoogleAccount;
-import com.dulno.google.account.GoogleAccountDatabaseTable;
-import com.dulno.google.account.GoogleCredential;
+import net.taskwolf.access.verification.Verification;
+import net.taskwolf.access.verification.VerificationLoginController;
+import net.taskwolf.core.access.TaskwolfRestController;
+import net.taskwolf.core.organization.team.TeamTargetDatabaseTable;
+import net.taskwolf.core.user.*;
+import net.taskwolf.google.GoogleAccountLink;
+import net.taskwolf.google.GoogleAccountLinkRepository;
+import net.taskwolf.google.account.GoogleAccount;
+import net.taskwolf.google.account.GoogleAccountDatabaseTable;
+import net.taskwolf.google.account.GoogleCredential;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,7 +32,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
-public class GoogleAccountController extends DulnoRestController {
+public class GoogleAccountController extends TaskwolfRestController {
   private final Key homeKey;
   private final Key refreshKey;
   private final String clientId;
@@ -44,7 +44,7 @@ public class GoogleAccountController extends DulnoRestController {
   private final TeamTargetDatabaseTable teamTargetDatabaseTable;
   private final ErrorRepository errorRepository;
   private final Hashing hashing;
-  private final DulnoEnvironment environment;
+  private final TaskwolfEnvironment environment;
 
   private GoogleAccountController(
     @Qualifier("homeKey") Key homeKey, @Qualifier("productKey") Key productKey,
@@ -56,7 +56,7 @@ public class GoogleAccountController extends DulnoRestController {
     VerificationRegistrationController verificationRegistrationController,
     TrialController trialController,
     TeamTargetDatabaseTable teamTargetDatabaseTable,
-    ErrorRepository errorRepository, Hashing hashing, DulnoEnvironment environment
+    ErrorRepository errorRepository, Hashing hashing, TaskwolfEnvironment environment
   ) {
     super(productKey, userDatabaseTable);
     this.homeKey = homeKey;
@@ -79,7 +79,7 @@ public class GoogleAccountController extends DulnoRestController {
     @RequestParam("code") String code, HttpServletResponse response
   ) throws Exception {
     response.sendRedirect("https://" + environment.domain() + "/close/");
-    var split = state.split("DULNO-STATE-SPLIT");
+    var split = state.split("TASKWOLF-STATE-SPLIT");
     var apiKey = split[0];
     if (!isValidApiKey(apiKey)) {
       return;
@@ -143,7 +143,7 @@ public class GoogleAccountController extends DulnoRestController {
     @RequestParam("code") String code, HttpServletResponse response
   ) {
     var futureResponse = new CompletableFuture<Void>();
-    var split = state.split("DULNO-STATE-SPLIT");
+    var split = state.split("TASKWOLF-STATE-SPLIT");
     var redirect = split[0];
     var language = split[1];
     new Thread(() -> googleLogin(
@@ -292,7 +292,7 @@ public class GoogleAccountController extends DulnoRestController {
       var serviceBuilder = new PeopleService.Builder(
         GoogleNetHttpTransport.newTrustedTransport(),
         GsonFactory.getDefaultInstance(), credential);
-      var service = serviceBuilder.setApplicationName("Dulno").build();
+      var service = serviceBuilder.setApplicationName("Taskwolf").build();
       return service.people().get("people/me")
         .setPersonFields("names,emailAddresses")
         .execute();

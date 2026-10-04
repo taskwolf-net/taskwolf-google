@@ -1,12 +1,12 @@
-package com.dulno.google.select;
+package net.taskwolf.google.select;
 
 import lombok.RequiredArgsConstructor;
-import com.dulno.core.iterator.AsyncIterator;
-import com.dulno.core.user.User;
-import com.dulno.workflow.component.input.InputComponentSelect;
-import com.dulno.workflow.component.input.InputComponentSelectEntry;
-import com.dulno.google.account.GoogleAccountDatabaseTable;
-import com.dulno.google.account.GoogleUserAccountDatabaseTable;
+import net.taskwolf.core.iterator.AsyncIterator;
+import net.taskwolf.core.user.User;
+import net.taskwolf.workflow.component.input.InputComponentSelect;
+import net.taskwolf.workflow.component.input.InputComponentSelectEntry;
+import net.taskwolf.google.account.GoogleAccountDatabaseTable;
+import net.taskwolf.google.account.GoogleUserAccountDatabaseTable;
 
 import java.util.List;
 import java.util.Map;
